@@ -26,6 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multi-step sequencing, and both strategies.
 - GitHub Actions matrix: PHP 8.2/8.3/8.4 × Laravel 11/12.
 
+### Verified (Sprint 3 — Multi-step + reject + cancel)
+
+- Multi-step workflows activate one step at a time; second step stays `pending`
+  until the first is approved.
+- Rejection at any step terminates the request immediately; remaining steps
+  stay `pending` — asserted in `RejectionTest`.
+- Cancellation blocked at terminal states with `InvalidStateTransitionException`.
+- Double-approval and wrong-actor guards both enforced and tested.
+- `StepRejected`, `ApprovalRejected`, `ApprovalCancelled` events dispatched
+  correctly and covered in tests.
+- `MultiStepApprovalTest` (5), `RejectionTest` (4), `CancellationTest` (3)
+  all pass.
+
 ### Verified (Sprint 2 — Engine core)
 
 - `ApprovalEngine::submit()`, `approve()`, `advanceOrComplete()`, `activateNextStep()`,
