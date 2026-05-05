@@ -2,8 +2,10 @@
 
 > Flexible approval workflows for Laravel. Make any model approvable with a trait.
 
-[![Tests](https://github.com/enad/approvio/actions/workflows/tests.yml/badge.svg)](https://github.com/enad/approvio/actions/workflows/tests.yml)
-[![Static Analysis](https://github.com/enad/approvio/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/enad/approvio/actions/workflows/static-analysis.yml)
+[![Tests](https://github.com/enadstack/approvio/actions/workflows/tests.yml/badge.svg)](https://github.com/enadstack/approvio/actions/workflows/tests.yml)
+[![Static Analysis](https://github.com/enadstack/approvio/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/enadstack/approvio/actions/workflows/static-analysis.yml)
+[![Latest Version](https://img.shields.io/packagist/v/enadstack/approvio)](https://packagist.org/packages/enadstack/approvio)
+[![Total Downloads](https://img.shields.io/packagist/dt/enadstack/approvio)](https://packagist.org/packages/enadstack/approvio)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/packagist/php-v/enadstack/approvio)](https://packagist.org/packages/enadstack/approvio)
 

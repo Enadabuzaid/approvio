@@ -10,12 +10,12 @@
         "audit-log",
         "state-machine"
     ],
-    "homepage": "https://github.com/enad/approvio",
+    "homepage": "https://github.com/enadstack/approvio",
     "license": "MIT",
     "authors": [
         {
             "name": "Enad Abu Zaid",
-            "email": "enad@example.com",
+            "email": "enad.abuzaid15@gmail.com",
             "homepage": "https://enadabuzaid.com",
             "role": "Developer"
         }
