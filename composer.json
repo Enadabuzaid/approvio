@@ -1,0 +1,70 @@
+{
+    "name": "enadstack/approvio",
+    "description": "A flexible, multi-tenant-aware approval workflow package for Laravel. Make any model approvable with a trait.",
+    "keywords": [
+        "laravel",
+        "approval",
+        "workflow",
+        "approvals",
+        "multi-tenant",
+        "audit-log",
+        "state-machine"
+    ],
+    "homepage": "https://github.com/enad/approvio",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Enad Abu Zaid",
+            "email": "enad@example.com",
+            "homepage": "https://enadabuzaid.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "illuminate/database": "^11.0|^12.0|^13.0",
+        "illuminate/events": "^11.0|^12.0|^13.0",
+        "illuminate/support": "^11.0|^12.0|^13.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.9|^3.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "phpstan/phpstan": "^1.10|^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Enadstack\\Approvio\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Enadstack\\Approvio\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "analyse": "vendor/bin/phpstan analyse"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Enadstack\\Approvio\\ApprovioServiceProvider"
+            ],
+            "aliases": {
+                "Approvio": "Enadstack\\Approvio\\Facades\\Approvio"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

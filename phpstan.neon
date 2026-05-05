@@ -1,0 +1,24 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - src/Workflow/Sources/DatabaseWorkflowSource.php (?)
+    treatPhpDocTypesAsCertain: false
+    scanFiles:
+        # Fixtures use the Approvable and HasApprovalActions traits. Without
+        # these entries PHPStan reports "trait used zero times" because the
+        # analysis path is src/ only.
+        - tests/Fixtures/Models/TestExpense.php
+        - tests/Fixtures/Models/TestUser.php
+        - tests/Fixtures/Models/TestDocument.php
+    ignoreErrors:
+        # These traits are public API intended to be used in consumer applications,
+        # not within the package itself. PHPStan cannot see consumer usage, so it
+        # reports them as "used zero times." Suppressed at the directory level.
+        -
+            identifier: trait.unused
+            path: src/Concerns
