@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multi-step sequencing, and both strategies.
 - GitHub Actions matrix: PHP 8.2/8.3/8.4 × Laravel 11/12.
 
+### Verified (Sprint 2 — Engine core)
+
+- `ApprovalEngine::submit()`, `approve()`, `advanceOrComplete()`, `activateNextStep()`,
+  and `logAction()` all implemented and passing full test coverage.
+- Single-step happy path: submit → step activated → approve → request completed,
+  with audit log entries and all four lifecycle events dispatched correctly.
+- `BasicApprovalFlowTest`, `StateMachineTest`, and `WorkflowBuilderTest` all pass.
+
 ### Fixed
 
 - `CHANGELOG.md` restructured: `[0.1.0] - TBD` moved back to `[Unreleased]`
