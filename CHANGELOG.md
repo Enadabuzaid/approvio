@@ -26,6 +26,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multi-step sequencing, and both strategies.
 - GitHub Actions matrix: PHP 8.2/8.3/8.4 × Laravel 11/12.
 
+### Added (Sprint 4 — Strategies + tenancy)
+
+- `TenancyTest`: 4 new tests covering `NullTenantResolver`, `ColumnTenantResolver`
+  reading from the approvable's `tenant` relation, and auth-user fallback.
+- `TestTenant` fixture model and `test_tenants` sandbox table for tenancy tests.
+- `tenant()` relation on `TestExpense` and `TestUser` fixtures.
+- `TestUser` now implements `Authenticatable` (required for `auth()->setUser()` in tests).
+
+### Verified (Sprint 4 — Strategies + tenancy)
+
+- `SoftApproval` and `DraftApproval` strategies fully implemented and covered by
+  dedicated feature test files.
+- `ColumnTenantResolver` and `NullTenantResolver` implemented; engine writes
+  `tenant_type` / `tenant_id` onto the request at submit time.
+- `resolveApprovalStrategy()` on `Approvable` reads `$approvalStrategy` property
+  with config fallback; all strategy tests pass for both implementations.
+
 ### Verified (Sprint 3 — Multi-step + reject + cancel)
 
 - Multi-step workflows activate one step at a time; second step stays `pending`

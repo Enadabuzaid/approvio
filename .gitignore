@@ -2,3 +2,6 @@
 /.phpunit.cache/
 /coverage/
 /.env
+composer.lock
+.DS_Store
+.idea/

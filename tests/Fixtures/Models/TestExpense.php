@@ -36,4 +36,9 @@ class TestExpense extends Model
     {
         return $this->belongsTo(TestUser::class, 'user_id');
     }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(TestTenant::class, 'tenant_id');
+    }
 }

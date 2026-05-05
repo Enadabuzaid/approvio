@@ -86,5 +86,11 @@ abstract class TestCase extends Orchestra
             $table->text('body')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('test_tenants', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
     }
 }

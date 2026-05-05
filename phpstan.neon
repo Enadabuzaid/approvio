@@ -15,6 +15,7 @@ parameters:
         - tests/Fixtures/Models/TestExpense.php
         - tests/Fixtures/Models/TestUser.php
         - tests/Fixtures/Models/TestDocument.php
+        - tests/Fixtures/Models/TestTenant.php
     ignoreErrors:
         # These traits are public API intended to be used in consumer applications,
         # not within the package itself. PHPStan cannot see consumer usage, so it
