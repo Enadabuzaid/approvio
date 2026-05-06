@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `StepType` enum (`Sequential`, `Parallel`) — cast on `ApprovalRequestStep`.
+- `WorkflowBuilder::parallel()` — marks a step as parallel (all assignees activated simultaneously).
+- `WorkflowBuilder::quorum(string $rule, ?int $count)` — sets quorum rule (`any`, `all`, `n_of_m`) on a step.
+- `ApprovalEngine::isStepQuorumMet()` — evaluates whether the configured quorum threshold is satisfied after each approval.
+- `ApprovalEngine::shouldStepTerminateOnRejection()` — policy hook (always `true` in v0.2; configurable threshold planned for v0.3).
+- Parallel steps section in `README.md` documenting quorum rules and rejection policy.
+
+### Changed
+
+- `ApprovalEngine::approve()` now evaluates quorum before completing a step, enabling partial-approval accumulation on parallel steps.
+- `Step::$type` changed from `string` to `StepType` enum; `PendingStep::$type` likewise.
+- `PendingStep::toStep()` now forwards `quorumRule` and `quorumCount` to the immutable `Step` value object.
+
 ## [0.1.0] - 2026-05-05
 
 ### Added

@@ -9,6 +9,7 @@ use Enadstack\Approvio\Contracts\TenantResolver;
 use Enadstack\Approvio\Contracts\WorkflowSource;
 use Enadstack\Approvio\Enums\ActionType;
 use Enadstack\Approvio\Enums\AssigneeStatus;
+use Enadstack\Approvio\Enums\QuorumRule;
 use Enadstack\Approvio\Enums\RequestStatus;
 use Enadstack\Approvio\Enums\StepStatus;
 use Enadstack\Approvio\Events\ApprovalCancelled;
@@ -149,14 +150,17 @@ class ApprovalEngine
                 comment: $comment,
             );
 
-            // For v0.1 (sequential, any-quorum): a single approval completes the step.
-            $this->completeStep($step, StepStatus::Approved);
-
             StepApproved::dispatch($request, $step, $action);
 
-            // Advance to next step or finish.
-            $request->refresh();
-            $next = $this->advanceOrComplete($request);
+            $step->refresh();
+
+            if ($this->isStepQuorumMet($step)) {
+                $this->completeStep($step, StepStatus::Approved);
+                $request->refresh();
+                $next = $this->advanceOrComplete($request);
+            } else {
+                $next = $request;
+            }
 
             return $next->fresh(['steps.assignees', 'actions']);
         });
@@ -279,7 +283,7 @@ class ApprovalEngine
             'approval_request_id' => $request->id,
             'step_index' => $index,
             'step_name' => $stepDef->name,
-            'type' => $stepDef->type,
+            'type' => $stepDef->type->value,
             'quorum_rule' => $stepDef->quorumRule->value,
             'quorum_count' => $stepDef->quorumCount,
             'status' => StepStatus::Pending,
@@ -434,6 +438,24 @@ class ApprovalEngine
             'ip_address' => config('approvio.audit.capture_ip', true) ? request()->ip() : null,
             'user_agent' => config('approvio.audit.capture_user_agent', true) ? request()->userAgent() : null,
         ]);
+    }
+
+    protected function isStepQuorumMet(ApprovalRequestStep $step): bool
+    {
+        $approvedCount = $step->assignees()
+            ->where('status', AssigneeStatus::Approved->value)
+            ->count();
+
+        return match ($step->quorum_rule) {
+            QuorumRule::Any => $approvedCount >= 1,
+            QuorumRule::All => $approvedCount >= $step->assignees()->count(),
+            QuorumRule::NofM => $approvedCount >= (int) $step->quorum_count,
+        };
+    }
+
+    protected function shouldStepTerminateOnRejection(ApprovalRequestStep $step): bool
+    {
+        return true;
     }
 
     protected function resolveStrategy(ApprovalRequest $request): ApprovalStrategy

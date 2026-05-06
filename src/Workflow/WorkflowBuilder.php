@@ -6,6 +6,8 @@ namespace Enadstack\Approvio\Workflow;
 
 use Closure;
 use Enadstack\Approvio\Contracts\ApproverResolver;
+use Enadstack\Approvio\Enums\QuorumRule;
+use Enadstack\Approvio\Enums\StepType;
 use Enadstack\Approvio\Resolvers\Approvers\DirectUserResolver;
 
 /**
@@ -64,7 +66,11 @@ class PendingStep
 {
     public ?ApproverResolver $approverResolver = null;
 
-    public string $type = 'sequential';
+    public StepType $type = StepType::Sequential;
+
+    public QuorumRule $quorumRule = QuorumRule::Any;
+
+    public ?int $quorumCount = null;
 
     public function __construct(public readonly string $name)
     {
@@ -86,6 +92,21 @@ class PendingStep
         return $this;
     }
 
+    public function parallel(): self
+    {
+        $this->type = StepType::Parallel;
+
+        return $this;
+    }
+
+    public function quorum(string $rule, ?int $count = null): self
+    {
+        $this->quorumRule = QuorumRule::from($rule);
+        $this->quorumCount = $count;
+
+        return $this;
+    }
+
     public function toStep(): Step
     {
         if (! $this->approverResolver) {
@@ -96,6 +117,8 @@ class PendingStep
             name: $this->name,
             approvers: $this->approverResolver,
             type: $this->type,
+            quorumRule: $this->quorumRule,
+            quorumCount: $this->quorumCount,
         );
     }
 }

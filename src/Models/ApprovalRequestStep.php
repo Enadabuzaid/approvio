@@ -6,6 +6,7 @@ namespace Enadstack\Approvio\Models;
 
 use Enadstack\Approvio\Enums\QuorumRule;
 use Enadstack\Approvio\Enums\StepStatus;
+use Enadstack\Approvio\Enums\StepType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $approval_request_id
  * @property int $step_index
  * @property string $step_name
- * @property string $type
+ * @property StepType $type
  * @property QuorumRule $quorum_rule
  * @property int|null $quorum_count
  * @property StepStatus $status
@@ -30,6 +31,7 @@ class ApprovalRequestStep extends Model
 
     protected $casts = [
         'status' => StepStatus::class,
+        'type' => StepType::class,
         'quorum_rule' => QuorumRule::class,
         'config' => 'array',
         'activated_at' => 'datetime',

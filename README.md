@@ -150,6 +150,50 @@ everything, and events fire for every step so you can wire up notifications.
 
 ---
 
+## Parallel steps
+
+By default every step is sequential — one approver acts, the step advances.
+Declare `.parallel()` to activate **all assigned approvers simultaneously**
+and configure how many must act before the step completes.
+
+```php
+public function define(WorkflowBuilder $flow): void
+{
+    // All three must approve (quorum: all).
+    $flow->step('joint-review')
+        ->approvers(fn () => User::whereIn('role', ['manager', 'finance', 'legal'])->get())
+        ->parallel()
+        ->quorum('all');
+
+    // Any single approval is enough (quorum: any).
+    $flow->step('peer-review')
+        ->approvers(fn () => User::where('role', 'peer')->get())
+        ->parallel()
+        ->quorum('any');
+
+    // 2 of 3 must approve (quorum: n_of_m).
+    $flow->step('committee-vote')
+        ->approvers(fn () => User::where('role', 'committee')->get())
+        ->parallel()
+        ->quorum('n_of_m', 2);
+}
+```
+
+**Quorum rules**
+
+| Rule | Description |
+|------|-------------|
+| `any` | First approval satisfies the step (default for sequential steps). |
+| `all` | Every assigned approver must approve. |
+| `n_of_m` | A specific number N must approve (pass N as second argument). |
+
+**Rejection policy**: any single rejection on a parallel step terminates the
+entire request immediately, regardless of how many approvals have already been
+received. There is no partial-approval recovery — cancel the request and
+resubmit if the rejection was in error.
+
+---
+
 ## Strategies
 
 Approvio ships two strategies. Pick per model based on risk tolerance.

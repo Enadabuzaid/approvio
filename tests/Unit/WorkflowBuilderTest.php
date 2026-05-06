@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use Enadstack\Approvio\Enums\QuorumRule;
+use Enadstack\Approvio\Enums\StepType;
 use Enadstack\Approvio\Tests\Fixtures\Models\TestExpense;
+use Enadstack\Approvio\Tests\Fixtures\Models\TestUser;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelNofMWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseTwoStepWorkflow;
 use Enadstack\Approvio\Workflow\WorkflowBuilder;
 use Enadstack\Approvio\Workflow\WorkflowDefinition;
@@ -32,3 +36,34 @@ it('throws when a step is missing approvers', function () {
 
     $builder->build();
 })->throws(LogicException::class, 'missing approvers');
+
+it('parallel() sets step type to Parallel', function () {
+    $builder = new WorkflowBuilder('test', 1, 'App\\TestModel');
+    $builder->step('committee')
+        ->approvers(fn () => TestUser::all())
+        ->parallel();
+
+    $definition = $builder->build();
+
+    expect($definition->stepAt(0)->type)->toBe(StepType::Parallel);
+});
+
+it('quorum() sets rule and count on the step', function () {
+    $workflow = new ExpenseParallelNofMWorkflow();
+    $definition = $workflow->toDefinition();
+    $step = $definition->stepAt(0);
+
+    expect($step->type)->toBe(StepType::Parallel)
+        ->and($step->quorumRule)->toBe(QuorumRule::NofM)
+        ->and($step->quorumCount)->toBe(2);
+});
+
+it('sequential steps default to Any quorum and Sequential type', function () {
+    $workflow = new ExpenseTwoStepWorkflow();
+    $definition = $workflow->toDefinition();
+    $step = $definition->stepAt(0);
+
+    expect($step->type)->toBe(StepType::Sequential)
+        ->and($step->quorumRule)->toBe(QuorumRule::Any)
+        ->and($step->quorumCount)->toBeNull();
+});

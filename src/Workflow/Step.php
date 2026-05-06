@@ -6,6 +6,7 @@ namespace Enadstack\Approvio\Workflow;
 
 use Enadstack\Approvio\Contracts\ApproverResolver;
 use Enadstack\Approvio\Enums\QuorumRule;
+use Enadstack\Approvio\Enums\StepType;
 
 /**
  * Immutable value object describing a single step in a workflow definition.
@@ -19,7 +20,7 @@ final class Step
     public function __construct(
         public readonly string $name,
         public readonly ApproverResolver $approvers,
-        public readonly string $type = 'sequential',
+        public readonly StepType $type = StepType::Sequential,
         public readonly QuorumRule $quorumRule = QuorumRule::Any,
         public readonly ?int $quorumCount = null,
         public readonly ?int $deadlineHours = null,
@@ -33,7 +34,7 @@ final class Step
     {
         return [
             'name' => $this->name,
-            'type' => $this->type,
+            'type' => $this->type->value,
             'quorum_rule' => $this->quorumRule->value,
             'quorum_count' => $this->quorumCount,
             'deadline_hours' => $this->deadlineHours,

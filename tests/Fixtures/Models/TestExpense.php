@@ -6,6 +6,9 @@ namespace Enadstack\Approvio\Tests\Fixtures\Models;
 
 use Enadstack\Approvio\Concerns\Approvable;
 use Enadstack\Approvio\Strategies\SoftApproval;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelAnyWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelNofMWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseSingleStepWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseTwoStepWorkflow;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +33,9 @@ class TestExpense extends Model
     protected array $approvalWorkflows = [
         'submission' => ExpenseSingleStepWorkflow::class,
         'two-step' => ExpenseTwoStepWorkflow::class,
+        'parallel-all' => ExpenseParallelWorkflow::class,
+        'parallel-any' => ExpenseParallelAnyWorkflow::class,
+        'parallel-n-of-m' => ExpenseParallelNofMWorkflow::class,
     ];
 
     public function user(): BelongsTo
