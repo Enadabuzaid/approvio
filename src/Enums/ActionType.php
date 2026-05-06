@@ -14,6 +14,7 @@ enum ActionType: string
     case Delegated = 'delegated';
     case Reassigned = 'reassigned';
     case Escalated = 'escalated';
+    case Skipped = 'skipped';
     case StepActivated = 'step_activated';
     case StepCompleted = 'step_completed';
     case Expired = 'expired';

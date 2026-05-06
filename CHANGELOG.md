@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `WorkflowBuilder::when(Closure)` — marks a step as conditional; the closure is evaluated against the live model at activation time.
+- `ConditionEvaluator` contract (`src/Contracts/ConditionEvaluator.php`) — extension point for class-based conditions.
+- `StepSkipped` event — fires whenever a step is skipped due to a false condition.
+- `ActionType::Skipped` enum case — recorded in the audit log for each skipped step.
+- `ApprovalEngine::skipStep()` — marks a step as skipped, logs the action, dispatches `StepSkipped`, and advances to the next step.
+- `ApprovalEngine::finalizeAsApproved()` — extracted from `advanceOrComplete()`; reused by the skip path so all-skipped workflows still complete.
+- Conditional steps section in `README.md` with live-model vs snapshot semantics documented.
 - `StepType` enum (`Sequential`, `Parallel`) — cast on `ApprovalRequestStep`.
 - `WorkflowBuilder::parallel()` — marks a step as parallel (all assignees activated simultaneously).
 - `WorkflowBuilder::quorum(string $rule, ?int $count)` — sets quorum rule (`any`, `all`, `n_of_m`) on a step.

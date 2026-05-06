@@ -6,7 +6,10 @@ namespace Enadstack\Approvio\Tests\Fixtures\Models;
 
 use Enadstack\Approvio\Concerns\Approvable;
 use Enadstack\Approvio\Strategies\SoftApproval;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseAllConditionalWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseConditionalWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelAnyWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelConditionalWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelNofMWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseSingleStepWorkflow;
@@ -36,6 +39,9 @@ class TestExpense extends Model
         'parallel-all' => ExpenseParallelWorkflow::class,
         'parallel-any' => ExpenseParallelAnyWorkflow::class,
         'parallel-n-of-m' => ExpenseParallelNofMWorkflow::class,
+        'conditional' => ExpenseConditionalWorkflow::class,
+        'all-conditional' => ExpenseAllConditionalWorkflow::class,
+        'parallel-conditional' => ExpenseParallelConditionalWorkflow::class,
     ];
 
     public function user(): BelongsTo

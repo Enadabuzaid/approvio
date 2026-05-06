@@ -194,6 +194,51 @@ resubmit if the rejection was in error.
 
 ---
 
+## Conditional steps
+
+Skip a step entirely when it does not apply to a given request by adding
+`.when(Closure)`. The closure is evaluated **at activation time against the
+live model** — not against the snapshot taken at submit time.
+
+```php
+public function define(WorkflowBuilder $flow): void
+{
+    $flow->step('manager-review')
+        ->approvers(fn (Expense $expense) => [$expense->user->manager]);
+
+    // CFO review is only required for large expenses.
+    $flow->step('cfo-review')
+        ->approvers(fn () => User::where('role', 'cfo')->get())
+        ->when(fn (Expense $expense) => $expense->amount > 10000);
+
+    $flow->step('final-sign-off')
+        ->approvers(fn () => User::where('role', 'director')->get());
+}
+```
+
+When the condition returns `false`:
+- The step's status is set to `skipped`.
+- A `skipped` audit action is logged.
+- `StepSkipped` event fires.
+- The engine immediately advances to the next step.
+- If all remaining steps are skipped, the request is marked `approved`.
+
+**Live model vs snapshot**: the closure receives the model as it exists at
+activation time. If the expense amount was changed between submit and the
+step's activation, the condition sees the new value. To opt into snapshot
+semantics, read `$request->snapshot` inside the closure:
+
+```php
+->when(fn (Expense $expense, ApprovalRequest $request) =>
+    ($request->snapshot['amount'] ?? 0) > 10000
+)
+```
+
+`.when()` composes with `.parallel()` and `.quorum()` — a parallel step
+is skipped as a whole if its condition is false.
+
+---
+
 ## Strategies
 
 Approvio ships two strategies. Pick per model based on risk tolerance.

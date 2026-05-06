@@ -72,6 +72,8 @@ class PendingStep
 
     public ?int $quorumCount = null;
 
+    public ?Closure $condition = null;
+
     public function __construct(public readonly string $name)
     {
     }
@@ -107,6 +109,13 @@ class PendingStep
         return $this;
     }
 
+    public function when(Closure $condition): self
+    {
+        $this->condition = $condition;
+
+        return $this;
+    }
+
     public function toStep(): Step
     {
         if (! $this->approverResolver) {
@@ -119,6 +128,7 @@ class PendingStep
             type: $this->type,
             quorumRule: $this->quorumRule,
             quorumCount: $this->quorumCount,
+            condition: $this->condition,
         );
     }
 }

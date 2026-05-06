@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Enadstack\Approvio\Workflow;
 
+use Closure;
 use Enadstack\Approvio\Contracts\ApproverResolver;
 use Enadstack\Approvio\Enums\QuorumRule;
 use Enadstack\Approvio\Enums\StepType;
@@ -24,6 +25,7 @@ final class Step
         public readonly QuorumRule $quorumRule = QuorumRule::Any,
         public readonly ?int $quorumCount = null,
         public readonly ?int $deadlineHours = null,
+        public readonly ?Closure $condition = null,
     ) {
     }
 
@@ -38,6 +40,7 @@ final class Step
             'quorum_rule' => $this->quorumRule->value,
             'quorum_count' => $this->quorumCount,
             'deadline_hours' => $this->deadlineHours,
+            'condition' => $this->condition !== null ? 'closure_provided' : null,
             // approvers resolver is not serialized — it's resolved live.
         ];
     }

@@ -19,6 +19,7 @@ use Enadstack\Approvio\Events\ApprovalRequested;
 use Enadstack\Approvio\Events\StepActivated;
 use Enadstack\Approvio\Events\StepApproved;
 use Enadstack\Approvio\Events\StepRejected;
+use Enadstack\Approvio\Events\StepSkipped;
 use Enadstack\Approvio\Exceptions\UnauthorizedActionException;
 use Enadstack\Approvio\Exceptions\InvalidStateTransitionException;
 use Enadstack\Approvio\Exceptions\WorkflowNotFoundException;
@@ -301,7 +302,6 @@ class ApprovalEngine
             return;
         }
 
-        // Resolve approvers freshly against the live model.
         $definition = $this->resolveWorkflow($request->approvable, $request->workflow_slug);
         $stepDef = $definition->stepAt($step->step_index);
 
@@ -309,6 +309,17 @@ class ApprovalEngine
             return;
         }
 
+        // Evaluate condition against the live model; skip if it returns false.
+        if ($stepDef->condition !== null) {
+            $approvable = $request->approvable;
+            if (! ($stepDef->condition)($approvable, $request)) {
+                $this->skipStep($request, $step);
+
+                return;
+            }
+        }
+
+        // Resolve approvers freshly against the live model.
         $approvers = $stepDef->approvers->resolve($request->approvable);
 
         foreach ($approvers as $approver) {
@@ -342,27 +353,43 @@ class ApprovalEngine
         StepActivated::dispatch($request, $step);
     }
 
+    protected function skipStep(ApprovalRequest $request, ApprovalRequestStep $step): void
+    {
+        $step->update([
+            'status' => StepStatus::Skipped,
+            'completed_at' => now(),
+        ]);
+
+        $this->logAction(
+            request: $request,
+            step: $step,
+            actor: null,
+            action: ActionType::Skipped,
+            comment: null,
+        );
+
+        StepSkipped::dispatch($request, $step);
+
+        $totalSteps = $request->steps()->count();
+        $nextIndex = $step->step_index + 1;
+
+        if ($nextIndex >= $totalSteps) {
+            $this->finalizeAsApproved($request->fresh());
+
+            return;
+        }
+
+        $request->update(['current_step_index' => $nextIndex]);
+        $this->activateNextStep($request->fresh());
+    }
+
     protected function advanceOrComplete(ApprovalRequest $request): ApprovalRequest
     {
         $totalSteps = $request->steps()->count();
         $nextIndex = $request->current_step_index + 1;
 
         if ($nextIndex >= $totalSteps) {
-            // All steps approved — request is fully approved.
-            $this->stateMachine->assertCanTransition($request->status, RequestStatus::Approved);
-
-            $request->update([
-                'status' => RequestStatus::Approved,
-                'completed_at' => now(),
-            ]);
-
-            $strategy = $this->resolveStrategy($request);
-            $approvable = $request->approvable;
-            if ($approvable instanceof Model) {
-                $strategy->onApprove($approvable, $request);
-            }
-
-            ApprovalCompleted::dispatch($request);
+            $this->finalizeAsApproved($request);
 
             return $request;
         }
@@ -372,6 +399,24 @@ class ApprovalEngine
         $this->activateNextStep($request->fresh());
 
         return $request->fresh();
+    }
+
+    protected function finalizeAsApproved(ApprovalRequest $request): void
+    {
+        $this->stateMachine->assertCanTransition($request->status, RequestStatus::Approved);
+
+        $request->update([
+            'status' => RequestStatus::Approved,
+            'completed_at' => now(),
+        ]);
+
+        $strategy = $this->resolveStrategy($request);
+        $approvable = $request->approvable;
+        if ($approvable instanceof Model) {
+            $strategy->onApprove($approvable, $request);
+        }
+
+        ApprovalCompleted::dispatch($request);
     }
 
     protected function assertActorCanActOnStep(ApprovalRequest $request, Model $actor): ApprovalRequestStep
