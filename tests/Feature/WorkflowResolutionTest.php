@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Enadstack\Approvio\Enums\RequestStatus;
 use Enadstack\Approvio\Exceptions\WorkflowNotFoundException;
+use Enadstack\Approvio\Tests\Fixtures\Models\TestBareExpense;
 use Enadstack\Approvio\Tests\Fixtures\Models\TestExpense;
 use Enadstack\Approvio\Tests\Fixtures\Models\TestUser;
 
@@ -17,6 +18,13 @@ it('throws WorkflowNotFoundException for an unregistered slug', function () {
 
     $expense->requestApproval('does-not-exist', $user);
 })->throws(WorkflowNotFoundException::class, 'No workflow registered');
+
+it('produces WorkflowNotFoundException when $approvalWorkflows is not declared on the model', function () {
+    $user = TestUser::create(['name' => 'Alice', 'email' => 'alice@example.com']);
+    $bare = TestBareExpense::create(['user_id' => $user->id, 'title' => 'Test', 'amount' => 1]);
+
+    $bare->requestApproval('anything', $user);
+})->throws(WorkflowNotFoundException::class);
 
 it('resolves a workflow registered via $approvalWorkflows on the model', function () {
     // Regression: CodeWorkflowSource accessed protected $approvalWorkflows via

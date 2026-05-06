@@ -202,20 +202,21 @@ class ApprovalEngine
 
             StepRejected::dispatch($request, $step, $action);
 
-            // Any rejection terminates the entire request.
-            $this->stateMachine->assertCanTransition($request->status, RequestStatus::Rejected);
-            $request->update([
-                'status' => RequestStatus::Rejected,
-                'completed_at' => now(),
-            ]);
+            if ($this->shouldStepTerminateOnRejection($step)) {
+                $this->stateMachine->assertCanTransition($request->status, RequestStatus::Rejected);
+                $request->update([
+                    'status' => RequestStatus::Rejected,
+                    'completed_at' => now(),
+                ]);
 
-            $strategy = $this->resolveStrategy($request);
-            $approvable = $request->approvable;
-            if ($approvable instanceof Model) {
-                $strategy->onReject($approvable, $request);
+                $strategy = $this->resolveStrategy($request);
+                $approvable = $request->approvable;
+                if ($approvable instanceof Model) {
+                    $strategy->onReject($approvable, $request);
+                }
+
+                ApprovalRejected::dispatch($request);
             }
-
-            ApprovalRejected::dispatch($request);
 
             return $request->fresh(['steps.assignees', 'actions']);
         });

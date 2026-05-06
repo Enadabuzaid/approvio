@@ -40,7 +40,7 @@ final class Step
             'quorum_rule' => $this->quorumRule->value,
             'quorum_count' => $this->quorumCount,
             'deadline_hours' => $this->deadlineHours,
-            'condition' => $this->condition !== null ? 'closure_provided' : null,
+            'has_condition' => $this->condition !== null,
             // approvers resolver is not serialized — it's resolved live.
         ];
     }

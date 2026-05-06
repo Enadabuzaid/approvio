@@ -16,10 +16,13 @@ parameters:
         - tests/Fixtures/Models/TestUser.php
         - tests/Fixtures/Models/TestDocument.php
         - tests/Fixtures/Models/TestTenant.php
+        - tests/Fixtures/Models/TestBareExpense.php
     ignoreErrors:
         # These traits are public API intended to be used in consumer applications,
         # not within the package itself. PHPStan cannot see consumer usage, so it
         # reports them as "used zero times." Suppressed at the directory level.
         -
             identifier: trait.unused
-            path: src/Concerns
+            paths:
+                - src/Concerns/Approvable.php
+                - src/Concerns/HasApprovalActions.php
