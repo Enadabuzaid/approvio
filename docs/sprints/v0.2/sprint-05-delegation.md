@@ -126,7 +126,14 @@ that is a PHP enum change, not a DB migration (the column stores strings).
 - [ ] `src/Approvio.php` + `src/Facades/Approvio.php` — add `delegate()` method
       and `@method` docblock.
 
-### 6. Tests
+### 6. README (delegation section)
+
+- [ ] Add **Delegation** section to README documenting:
+  - `$user->delegate($request, $deputy, $comment)` API.
+  - **Explicitly state**: delegation is non-revocable in v0.2. The escape hatch
+    is to cancel the request and resubmit. Revocation is planned for v0.3.
+
+### 7. Tests
 
 - [ ] `tests/Feature/DelegationTest.php`:
   - [ ] original assignee's status becomes `delegated` after delegating
@@ -149,9 +156,22 @@ that is a PHP enum change, not a DB migration (the column stores strings).
 - [ ] PHPStan green at level 7.
 - [ ] `CHANGELOG.md` updated.
 
+## Revocation (v0.3)
+
+**Decision (confirmed):** Delegation is non-revocable in v0.2. Once an assignee
+delegates, they are locked out for the request lifetime. The v0.2 escape hatch
+for users who need to undo a delegation is:
+
+1. Cancel the current request (`$approvable->latestApprovalRequest()->cancel()`).
+2. Resubmit (`$approvable->resubmit()`).
+
+This must be documented in the README delegation section so users aren't surprised.
+True revocation (re-activating the original assignee and removing the delegate)
+is planned for v0.3.
+
 ## Out of scope
 
-- Revoking a delegation (un-delegating) → v0.3.
+- Revoking a delegation (un-delegating) → v0.3. See revocation note above.
 - Delegation chains beyond 1 level → v0.3.
 - Delegation notifications → v0.4 (default notification classes).
 - Delegation expiry (delegate only valid for N hours) → v0.3.

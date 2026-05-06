@@ -18,7 +18,8 @@ When this sprint is done:
   - `all` — complete only when every assignee has approved.
   - `n_of_m` — complete when N distinct approvals are recorded.
 - Rejection by any assignee on a parallel step terminates the step (and request)
-  immediately, regardless of quorum.
+  immediately, **regardless of quorum** (v0.2 fixed policy — configurable in v0.3
+  via `shouldStepTerminateOnRejection()`).
 - All v0.1 sequential tests still pass unmodified.
 
 ## Architecture notes
@@ -39,6 +40,9 @@ the same method, they just always resolve to true immediately.
 For rejection: extract `ApprovalEngine::shouldStepTerminateOnRejection(ApprovalRequestStep): bool`.
 In v0.2 this always returns `true`. In v0.3 it can be made configurable. Isolating
 it now prevents painting into a corner.
+
+**Decision (confirmed):** Any rejection terminates a parallel step immediately
+regardless of quorum. This is intentional and must be documented in the README.
 
 ### v0.1 tests that must pass unmodified
 
@@ -114,10 +118,18 @@ has `type` (default `sequential`), `quorum_rule` (default `any`), and
   - [ ] quorum `all` — waits until every assignee approves
   - [ ] quorum `n_of_m` — completes when N approvals received, not before
   - [ ] quorum `n_of_m` — does not complete on fewer than N approvals
-  - [ ] rejection on a parallel step terminates the request immediately
+  - [ ] rejection on a parallel step terminates the request immediately (any rejection, regardless of quorum)
   - [ ] a sequential step after a parallel step only activates after parallel completes
   - [ ] events: `StepApproved` fires for each individual approval; `StepActivated`
         fires once when the step first becomes active (not once per assignee)
+
+### 6. README
+
+- [ ] Add **Parallel steps** section to README documenting:
+  - `.parallel()`, `.quorum('any'|'all'|'n_of_m', N)` API.
+  - **Explicitly state**: any single rejection on a parallel step terminates the
+    entire request regardless of quorum. This is the v0.2 fixed policy. If configurable
+    rejection thresholds are needed, they are planned for v0.3.
 
 ## Acceptance checklist
 

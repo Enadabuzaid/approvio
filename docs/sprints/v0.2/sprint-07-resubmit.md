@@ -8,13 +8,16 @@
 
 When this sprint is done:
 
-- `$expense->resubmit()` (or `$rejectedRequest->resubmit()` via
-  `Approvio::resubmit()`) creates a new `ApprovalRequest` for the same
-  approvable/workflow with the same strategy.
+- `$expense->resubmit()` (or `Approvio::resubmit($rejectedRequest)`) creates a
+  new `ApprovalRequest` for the same approvable/workflow with the same strategy.
+- Signature: `resubmit(?Model $requester = null, array $context = [], ?array $changes = null)`.
+  - When `$changes` is `null`: carry forward the original request's `pending_changes`
+    (correct default for `DraftApproval`; a no-op for `SoftApproval`).
+  - When `$changes` is provided: override with the supplied array. This lets callers
+    submit corrected data without a separate `requestApprovalFor()` call.
 - The new request has `parent_request_id` pointing to the rejected one.
-- The new request's `snapshot` and `context` are inherited from the original.
-- For `DraftApproval` requests, the original `pending_changes` are carried forward
-  into the new request's `pending_changes` as the starting point.
+- The new request's `snapshot` and `context` are inherited from the original
+  (context merged with any new `$context` passed by caller).
 - `RequestResubmitted` event fires.
 - The new request goes through the normal submit lifecycle (strategy `onSubmit`,
   first step activated, etc.).
@@ -60,15 +63,16 @@ When this sprint is done:
 ### 5. Engine
 
 - [ ] `src/Engine/ApprovalEngine.php` — add `resubmit()`:
-  - Accepts: `ApprovalRequest $original`, `?Model $requester`, `array $context`.
+  - Accepts: `ApprovalRequest $original`, `?Model $requester`, `array $context`,
+    `?array $changes = null`.
   - Guard: `$original->status !== Rejected` → throw `InvalidStateTransitionException`.
   - Guard: if `$original->children()->whereNotIn('status', terminal states)->exists()`
     → throw `InvalidStateTransitionException('This request already has an active resubmission.')`.
   - Wrap in `DB::transaction()`.
+  - Resolve effective changes: `$changes ?? $original->pending_changes ?? []`.
   - Call `submit()` with same approvable, workflow slug, strategy, and requester;
-    merge original `context` with any new `$context` passed by caller.
-  - For `DraftApproval` strategy: pass `$original->pending_changes ?? []` as the
-    `$changes` argument to `submit()`.
+    merge original `context` with any new `$context` passed by caller; pass
+    effective changes as `$changes`.
   - After `submit()`: set `parent_request_id` on the new request, save.
   - Log `resubmitted` action on the **original** request (audit trail on the parent).
   - Dispatch `RequestResubmitted`.
@@ -79,16 +83,24 @@ When this sprint is done:
 - [ ] `src/Concerns/Approvable.php` — add `resubmit()`:
   ```php
   public function resubmit(
-      ?Model $requester = null,
-      array  $context   = [],
+      ?Model  $requester = null,
+      array   $context   = [],
+      ?array  $changes   = null,
   ): ApprovalRequest {
       $latest = $this->approvalRequests()
           ->where('status', RequestStatus::Rejected)
           ->latest()
           ->firstOrFail();
-      return app(ApprovalEngine::class)->resubmit($latest, $requester ?? auth()->user(), $context);
+      return app(ApprovalEngine::class)->resubmit(
+          original:  $latest,
+          requester: $requester ?? auth()->user(),
+          context:   $context,
+          changes:   $changes,
+      );
   }
   ```
+  **Decision (confirmed):** `$changes = null` carries forward parent `pending_changes`;
+  explicit array overrides. Matches `requestApprovalFor()` pattern.
 - [ ] `src/Approvio.php` + `src/Facades/Approvio.php` — add `resubmit()` and
       `@method` docblock.
 
@@ -98,7 +110,8 @@ When this sprint is done:
   - [ ] resubmit creates a new request linked via `parent_request_id`
   - [ ] new request has the original snapshot and context
   - [ ] new request goes through the normal submit lifecycle (step activated)
-  - [ ] `DraftApproval` resubmit carries forward `pending_changes`
+  - [ ] `DraftApproval` resubmit carries forward `pending_changes` when `$changes` is null
+  - [ ] explicit `$changes` overrides the parent `pending_changes`
   - [ ] `RequestResubmitted` event fires with both request instances
   - [ ] audit log on the original request records a `resubmitted` action
   - [ ] attempting to resubmit a non-rejected request throws

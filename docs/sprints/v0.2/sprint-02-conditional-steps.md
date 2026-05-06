@@ -24,16 +24,28 @@ When this sprint is done:
 
 ## Design note — when to evaluate conditions
 
-Conditions are evaluated **lazily at activation time** against the **live model**
-(not the snapshot). Rationale: the condition often depends on live data that may
-have changed since submission (e.g., a manager may have been assigned after
-submission). Storing the pre-evaluated boolean in `config` at submit time would
-be wrong for use-cases like "if the request is still pending after 24 hours, add
-a CFO step". Lazy evaluation is the correct default.
+**Decision (confirmed):** Conditions are evaluated **lazily at activation time**
+against the **live model** (not the snapshot). Rationale: conditions decide based
+on current reality. Evaluating against the snapshot would produce the bug class
+"I lowered the expense amount but it still triggered the CFO review step."
+
+Users who want snapshot-based conditions can read `$request->snapshot` inside the
+closure:
+
+```php
+$flow->step('cfo-review')
+    ->approvers(...)
+    ->when(fn (Expense $expense, ApprovalRequest $request) =>
+        ($request->snapshot['amount'] ?? 0) > 10000
+    );
+```
 
 The `config` column stores the resolver metadata (e.g., the class name of a
 `ConditionEvaluator` implementation) so the condition is recoverable from the
 frozen step record for audit purposes.
+
+**This evaluation timing must be documented in the README** so users understand
+exactly which value their condition sees.
 
 ## Tasks
 
@@ -102,6 +114,14 @@ frozen step record for audit purposes.
 - [ ] `ConditionalStepsTest` — all 8 cases pass.
 - [ ] PHPStan green at level 6.
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`.
+
+### 8. README (conditional steps section)
+
+- [ ] Add **Conditional steps** section to README documenting:
+  - `.when(Closure)` API with a practical example (CFO step only when `amount > 10000`).
+  - **Explicitly state**: the condition closure receives the **live model** at
+    activation time, not the snapshot. Quote the example above showing how to
+    opt into snapshot-based semantics via `$request->snapshot`.
 
 ## Out of scope
 

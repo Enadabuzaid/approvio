@@ -14,9 +14,13 @@ When this sprint is done:
   deadline (`now() + N hours`).
 - `php artisan approvio:escalate` scans for steps where `deadline_at < now()` and
   status is still `active`, then:
-  - If the step has an escalation target: resolves it, creates a new assignee
-    row with `assigned_via = 'escalation'`, marks original assignees as
-    `status = escalated`, logs an `escalated` action, dispatches `StepEscalated`.
+  - If the step has an escalation target: resolves it, **adds** a new assignee
+    row with `assigned_via = 'escalation'` (original assignees are NOT replaced
+    — they remain, with `status = escalated`), logs an `escalated` action,
+    dispatches `StepEscalated`. Quorum re-evaluates with the new assignee included.
+    **Decision (confirmed):** add the escalation target alongside the original —
+    "Bob was originally responsible; Alice was added after 48 h of inactivity" is
+    true and preserves audit history.
   - If no escalation target: transitions the step to `expired`, transitions the
     request to `expired`, logs the action, dispatches `ApprovalExpired` (new event).
 - `php artisan approvio:expire` (or merged into `approvio:escalate`) scans
