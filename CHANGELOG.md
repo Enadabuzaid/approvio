@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `EscalateApprovalsCommand` (`approvio:escalate`) — scans overdue active steps and expired requests; escalates or expires each one.
+- `ApprovalEngine::escalateStep()` — re-resolves the workflow, marks Pending assignees `Escalated`, adds escalation target(s) as new Pending assignees, logs `ActionType::Escalated`, dispatches `StepEscalated`.
+- `ApprovalEngine::expire()` — transitions a request to `RequestStatus::Expired`, logs, dispatches `ApprovalExpired`.
+- `StepEscalated` event — fires with `$request`, `$step`, `$originalAssignee`.
+- `ApprovalExpired` event — fires with `$request` when a request expires.
+- `EscalationException` — `emptyTarget()` named constructor for misconfigured escalation targets.
+- `AssigneeStatus::Escalated` — marks an assignee whose slot was superseded by escalation; excluded from `All` quorum denominator alongside `Delegated`.
+- `WorkflowBuilder::deadline(int $hours)` — sets `deadline_at` on the step at activation time.
+- `WorkflowBuilder::escalateTo(Closure)` — registers escalation resolver on the step.
+- `Step::$escalateTo` — new immutable field on the `Step` value object.
+- `Step::toArray()` now includes `has_escalation: bool`.
+- `config/approvio.php` — `schedule.escalate_cron` key for apps that opt-in to automatic scheduling.
+- Escalation and deadlines section in `README.md`.
+- `StateMachineTest` — 2 new cases: `in_review → expired` and `expired` terminal state.
 - `ApprovalEngine::delegate()` — one-level delegation; marks original assignee as `Delegated`, creates a new pending assignee row for the delegate with `assigned_via = 'delegation'`.
 - `HasApprovalActions::delegate()` — actor-shorthand: `$manager->delegate($request, $deputy, 'OOO')`.
 - `Approvio::delegate()` — facade-backed delegation method.

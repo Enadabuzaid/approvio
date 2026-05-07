@@ -328,6 +328,39 @@ Delegation is **not revocable**. If a request needs to be restarted after an err
 
 ---
 
+## Escalation and deadlines
+
+Steps can declare a time limit and an escalation target. When a step's deadline passes,
+`approvio:escalate` either promotes a new assignee or expires the request.
+
+```php
+$flow->step('manager-review')
+    ->approvers(fn ($expense) => [$expense->user->manager])
+    ->deadline(48)                           // hours
+    ->escalateTo(fn ($expense) => [$expense->user->manager->manager]);
+```
+
+Run the command on a schedule (e.g. every minute in `App\Console\Kernel`):
+
+```bash
+php artisan approvio:escalate
+```
+
+When a step's deadline passes:
+
+- **If `escalateTo` resolves non-empty users**: original Pending assignees are marked `Escalated`
+  (they can no longer act), and the escalation target(s) are added as new `Pending` assignees.
+  Quorum re-evaluates excluding `Escalated` rows.
+- **If no escalation target** (or it resolves empty): the step and the entire request are
+  transitioned to `expired`.
+
+The command also scans `approval_requests.expires_at`: any non-terminal request whose
+`expires_at` has passed is expired directly.
+
+Trying to `approve()` or `reject()` an expired request throws `InvalidStateTransitionException`.
+
+---
+
 ## Strategies
 
 Approvio ships two strategies. Pick per model based on risk tolerance.

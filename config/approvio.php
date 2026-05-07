@@ -133,4 +133,20 @@ return [
         'queue' => env('APPROVIO_QUEUE', null),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduled Commands
+    |--------------------------------------------------------------------------
+    |
+    | Set escalate_cron to a valid cron expression to enable automatic
+    | scheduling of approvio:escalate via your app's scheduler. Set to
+    | null to disable — you can then call the command manually or from
+    | your own scheduler entry.
+    |
+    */
+
+    'schedule' => [
+        'escalate_cron' => '* * * * *',
+    ],
+
 ];

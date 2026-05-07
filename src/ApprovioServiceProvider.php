@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Enadstack\Approvio;
 
+use Enadstack\Approvio\Commands\EscalateApprovalsCommand;
 use Enadstack\Approvio\Contracts\TenantResolver;
 use Enadstack\Approvio\Contracts\WorkflowSource;
 use Enadstack\Approvio\Engine\ApprovalEngine;
@@ -66,6 +67,8 @@ class ApprovioServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'approvio-migrations');
+
+            $this->commands([EscalateApprovalsCommand::class]);
         }
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');

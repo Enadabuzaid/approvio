@@ -8,6 +8,8 @@ use Enadstack\Approvio\Concerns\Approvable;
 use Enadstack\Approvio\Strategies\SoftApproval;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseAllConditionalWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseConditionalWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseDeadlineNoEscalationWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseEscalationWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelAnyWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelConditionalWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelNofMWorkflow;
@@ -44,6 +46,8 @@ class TestExpense extends Model
         'all-conditional' => ExpenseAllConditionalWorkflow::class,
         'parallel-conditional' => ExpenseParallelConditionalWorkflow::class,
         'relationship' => ExpenseRelationshipWorkflow::class,
+        'escalation' => ExpenseEscalationWorkflow::class,
+        'deadline-no-escalation' => ExpenseDeadlineNoEscalationWorkflow::class,
     ];
 
     public function user(): BelongsTo

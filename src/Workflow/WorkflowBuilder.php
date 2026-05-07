@@ -74,6 +74,10 @@ class PendingStep
 
     public ?int $quorumCount = null;
 
+    public ?int $deadlineHours = null;
+
+    public ?Closure $escalateTo = null;
+
     public ?Closure $condition = null;
 
     public function __construct(public readonly string $name)
@@ -129,6 +133,20 @@ class PendingStep
         return $this->approvers(new RoleResolver($roleName, $guardName));
     }
 
+    public function deadline(int $hours): self
+    {
+        $this->deadlineHours = $hours;
+
+        return $this;
+    }
+
+    public function escalateTo(Closure $resolver): self
+    {
+        $this->escalateTo = $resolver;
+
+        return $this;
+    }
+
     public function when(Closure $condition): self
     {
         $this->condition = $condition;
@@ -148,6 +166,8 @@ class PendingStep
             type: $this->type,
             quorumRule: $this->quorumRule,
             quorumCount: $this->quorumCount,
+            deadlineHours: $this->deadlineHours,
+            escalateTo: $this->escalateTo,
             condition: $this->condition,
         );
     }

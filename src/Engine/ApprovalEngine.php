@@ -14,11 +14,13 @@ use Enadstack\Approvio\Enums\RequestStatus;
 use Enadstack\Approvio\Enums\StepStatus;
 use Enadstack\Approvio\Events\ApprovalCancelled;
 use Enadstack\Approvio\Events\ApprovalCompleted;
+use Enadstack\Approvio\Events\ApprovalExpired;
 use Enadstack\Approvio\Events\ApprovalRejected;
 use Enadstack\Approvio\Events\ApprovalRequested;
 use Enadstack\Approvio\Events\RequestDelegated;
 use Enadstack\Approvio\Events\StepActivated;
 use Enadstack\Approvio\Events\StepApproved;
+use Enadstack\Approvio\Events\StepEscalated;
 use Enadstack\Approvio\Events\StepRejected;
 use Enadstack\Approvio\Events\StepSkipped;
 use Enadstack\Approvio\Exceptions\DelegationException;
@@ -338,6 +340,7 @@ class ApprovalEngine
         $step->update([
             'status' => StepStatus::Active,
             'activated_at' => now(),
+            'deadline_at' => $stepDef->deadlineHours !== null ? now()->addHours($stepDef->deadlineHours) : null,
         ]);
 
         // Bump request status to in_review on first activation.
@@ -497,7 +500,7 @@ class ApprovalEngine
         return match ($step->quorum_rule) {
             QuorumRule::Any => $approvedCount >= 1,
             QuorumRule::All => $approvedCount >= $step->assignees()
-                ->where('status', '!=', AssigneeStatus::Delegated->value)
+                ->whereNotIn('status', [AssigneeStatus::Delegated->value, AssigneeStatus::Escalated->value])
                 ->count(),
             QuorumRule::NofM => $approvedCount >= (int) $step->quorum_count,
         };
@@ -562,6 +565,117 @@ class ApprovalEngine
 
             return $request->fresh(['steps.assignees', 'actions']);
         });
+    }
+
+    public function escalateStep(ApprovalRequestStep $step): void
+    {
+        DB::transaction(function () use ($step) {
+            $step->load('request');
+            $request = $step->request;
+
+            if (! $request instanceof ApprovalRequest) {
+                return;
+            }
+
+            $approvable = $request->approvable;
+            $definition = $this->resolveWorkflow($approvable, $request->workflow_slug);
+            $stepDef = $definition->stepAt($step->step_index);
+
+            if ($stepDef === null || $stepDef->escalateTo === null) {
+                $this->expireStepAndRequest($step, $request);
+
+                return;
+            }
+
+            $resolved = ($stepDef->escalateTo)($approvable);
+            $escalationTargets = [];
+            if (is_iterable($resolved)) {
+                foreach ($resolved as $candidate) {
+                    if ($candidate instanceof Model) {
+                        $escalationTargets[] = $candidate;
+                    }
+                }
+            }
+
+            if (empty($escalationTargets)) {
+                $this->expireStepAndRequest($step, $request);
+
+                return;
+            }
+
+            // Mark all currently Pending assignees as Escalated.
+            $step->assignees()
+                ->where('status', AssigneeStatus::Pending->value)
+                ->each(fn (ApprovalStepAssignee $a) => $a->update([
+                    'status' => AssigneeStatus::Escalated,
+                    'acted_at' => now(),
+                ]));
+
+            // Add escalation target(s) as new pending assignees.
+            foreach ($escalationTargets as $target) {
+                ApprovalStepAssignee::create([
+                    'approval_request_step_id' => $step->id,
+                    'assignee_type' => $target->getMorphClass(),
+                    'assignee_id' => $target->getKey(),
+                    'assigned_via' => 'escalation',
+                    'status' => AssigneeStatus::Pending,
+                ]);
+            }
+
+            $this->logAction(
+                request: $request,
+                step: $step,
+                actor: null,
+                action: ActionType::Escalated,
+                comment: null,
+            );
+
+            $originalAssignee = $step->assignees()
+                ->where('status', AssigneeStatus::Escalated->value)
+                ->first();
+
+            if ($originalAssignee !== null) {
+                StepEscalated::dispatch($request, $step, $originalAssignee);
+            }
+        });
+    }
+
+    public function expire(ApprovalRequest $request): void
+    {
+        DB::transaction(function () use ($request) {
+            $request->refresh();
+
+            if ($request->status->isTerminal()) {
+                return;
+            }
+
+            $this->stateMachine->assertCanTransition($request->status, RequestStatus::Expired);
+
+            $request->update([
+                'status' => RequestStatus::Expired,
+                'completed_at' => now(),
+            ]);
+
+            $this->logAction(
+                request: $request,
+                step: null,
+                actor: null,
+                action: ActionType::Expired,
+                comment: null,
+            );
+
+            ApprovalExpired::dispatch($request);
+        });
+    }
+
+    protected function expireStepAndRequest(ApprovalRequestStep $step, ApprovalRequest $request): void
+    {
+        $step->update([
+            'status' => StepStatus::Expired,
+            'completed_at' => now(),
+        ]);
+
+        $this->expire($request);
     }
 
     protected function shouldStepTerminateOnRejection(ApprovalRequestStep $step): bool

@@ -58,6 +58,7 @@ class ApprovalStepAssignee extends Model
             AssigneeStatus::Approved,
             AssigneeStatus::Rejected,
             AssigneeStatus::Delegated,
+            AssigneeStatus::Escalated,
         ], true);
     }
 }

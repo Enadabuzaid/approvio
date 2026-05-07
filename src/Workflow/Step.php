@@ -25,6 +25,7 @@ final class Step
         public readonly QuorumRule $quorumRule = QuorumRule::Any,
         public readonly ?int $quorumCount = null,
         public readonly ?int $deadlineHours = null,
+        public readonly ?Closure $escalateTo = null,
         public readonly ?Closure $condition = null,
     ) {
     }
@@ -40,6 +41,7 @@ final class Step
             'quorum_rule' => $this->quorumRule->value,
             'quorum_count' => $this->quorumCount,
             'deadline_hours' => $this->deadlineHours,
+            'has_escalation' => $this->escalateTo !== null,
             'has_condition' => $this->condition !== null,
             // approvers resolver is not serialized — it's resolved live.
         ];

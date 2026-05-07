@@ -38,3 +38,17 @@ it('throws InvalidStateTransitionException with a clear message', function () {
 
     $sm->assertCanTransition(RequestStatus::Approved, RequestStatus::InReview);
 })->throws(InvalidStateTransitionException::class, 'Cannot transition');
+
+it('allows in_review to expired', function () {
+    $sm = new StateMachine();
+
+    expect($sm->canTransition(RequestStatus::InReview, RequestStatus::Expired))->toBeTrue();
+});
+
+it('rejects expired -> anything (terminal state)', function () {
+    $sm = new StateMachine();
+
+    expect($sm->canTransition(RequestStatus::Expired, RequestStatus::Approved))->toBeFalse();
+    expect($sm->canTransition(RequestStatus::Expired, RequestStatus::InReview))->toBeFalse();
+    expect($sm->canTransition(RequestStatus::Expired, RequestStatus::Cancelled))->toBeFalse();
+});
