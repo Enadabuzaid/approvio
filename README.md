@@ -239,6 +239,33 @@ is skipped as a whole if its condition is false.
 
 ---
 
+## Relationship-based approvers
+
+Use `.relation()` to resolve approvers by walking a dot-notation chain of
+Eloquent relations on the approvable model. The chain is evaluated against
+the **live model** at the moment the step activates.
+
+```php
+$flow->step('owner-review')
+    ->relation('user');              // $expense->user  (BelongsTo)
+
+$flow->step('head-of-department')
+    ->relation('user.department.head');  // multi-hop chain
+
+$flow->step('team-members')
+    ->relation('team.members');     // chain ending in a Collection
+```
+
+If any segment in the chain returns `null`, or a non-Model/non-Collection
+value, the step is activated with zero assignees (no exception thrown).
+Combine with `.when()` to skip such steps explicitly when the chain is known
+to be optional.
+
+The `approval_step_assignees.assigned_via` column is set to `'relationship'`
+for relation-resolved assignees.
+
+---
+
 ## Spatie Permission integration
 
 Use `.role()` on a step to resolve all users holding a given Spatie role at

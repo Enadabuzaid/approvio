@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `RelationshipResolver` — resolves approvers by walking a dot-notation Eloquent relation chain; returns empty collection gracefully when any segment is null.
+- `WorkflowBuilder::relation(string $chain)` — fluent shorthand for relationship-based steps.
+- PHPStan ratcheted from level 6 to level 7 — 0 errors across all source files.
+- Relationship-based approvers section in `README.md`.
 - `RoleResolver` — resolves approvers by Spatie Permission role name; throws `MissingDependencyException` when `spatie/laravel-permission` is not installed.
 - `MissingDependencyException` — descriptive exception for missing optional dependencies with `composer require` hint.
 - `ApproverResolver::assignedVia(): string` — new contract method; `DirectUserResolver` returns `'direct'`, `RoleResolver` returns `'role'`.

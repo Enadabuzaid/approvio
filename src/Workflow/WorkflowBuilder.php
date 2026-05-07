@@ -9,6 +9,7 @@ use Enadstack\Approvio\Contracts\ApproverResolver;
 use Enadstack\Approvio\Enums\QuorumRule;
 use Enadstack\Approvio\Enums\StepType;
 use Enadstack\Approvio\Resolvers\Approvers\DirectUserResolver;
+use Enadstack\Approvio\Resolvers\Approvers\RelationshipResolver;
 use Enadstack\Approvio\Resolvers\Approvers\RoleResolver;
 
 /**
@@ -108,6 +109,15 @@ class PendingStep
         $this->quorumCount = $count;
 
         return $this;
+    }
+
+    /**
+     * Resolve approvers by walking a dot-notation Eloquent relation chain.
+     * e.g. 'user', 'user.manager', 'department.members'
+     */
+    public function relation(string $chain): self
+    {
+        return $this->approvers(new RelationshipResolver($chain));
     }
 
     /**
