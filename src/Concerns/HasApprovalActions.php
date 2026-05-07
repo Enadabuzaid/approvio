@@ -10,6 +10,7 @@ use Enadstack\Approvio\Models\ApprovalAction;
 use Enadstack\Approvio\Models\ApprovalRequest;
 use Enadstack\Approvio\Models\ApprovalStepAssignee;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
@@ -68,5 +69,10 @@ trait HasApprovalActions
     public function reject(ApprovalRequest $request, ?string $comment = null): ApprovalRequest
     {
         return app(ApprovalEngine::class)->reject($request, $this, $comment);
+    }
+
+    public function delegate(ApprovalRequest $request, Model $delegateTo, ?string $comment = null): ApprovalRequest
+    {
+        return app(ApprovalEngine::class)->delegate($request, $this, $delegateTo, $comment);
     }
 }

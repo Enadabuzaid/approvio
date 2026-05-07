@@ -16,10 +16,12 @@ use Enadstack\Approvio\Events\ApprovalCancelled;
 use Enadstack\Approvio\Events\ApprovalCompleted;
 use Enadstack\Approvio\Events\ApprovalRejected;
 use Enadstack\Approvio\Events\ApprovalRequested;
+use Enadstack\Approvio\Events\RequestDelegated;
 use Enadstack\Approvio\Events\StepActivated;
 use Enadstack\Approvio\Events\StepApproved;
 use Enadstack\Approvio\Events\StepRejected;
 use Enadstack\Approvio\Events\StepSkipped;
+use Enadstack\Approvio\Exceptions\DelegationException;
 use Enadstack\Approvio\Exceptions\UnauthorizedActionException;
 use Enadstack\Approvio\Exceptions\InvalidStateTransitionException;
 use Enadstack\Approvio\Exceptions\WorkflowNotFoundException;
@@ -494,9 +496,72 @@ class ApprovalEngine
 
         return match ($step->quorum_rule) {
             QuorumRule::Any => $approvedCount >= 1,
-            QuorumRule::All => $approvedCount >= $step->assignees()->count(),
+            QuorumRule::All => $approvedCount >= $step->assignees()
+                ->where('status', '!=', AssigneeStatus::Delegated->value)
+                ->count(),
             QuorumRule::NofM => $approvedCount >= (int) $step->quorum_count,
         };
+    }
+
+    public function delegate(
+        ApprovalRequest $request,
+        Model $actor,
+        Model $delegateTo,
+        ?string $comment = null,
+    ): ApprovalRequest {
+        return DB::transaction(function () use ($request, $actor, $delegateTo, $comment) {
+            $request->refresh();
+
+            $step = $request->currentStep();
+
+            if (! $step || ! $step->isActive()) {
+                throw DelegationException::notAnAssignee();
+            }
+
+            $assignee = $step->assignees()
+                ->where('assignee_type', $actor->getMorphClass())
+                ->where('assignee_id', $actor->getKey())
+                ->first();
+
+            if (! $assignee) {
+                throw DelegationException::notAnAssignee();
+            }
+
+            if ($assignee->assigned_via === 'delegation') {
+                throw DelegationException::cannotDelegateFurther();
+            }
+
+            if ($assignee->hasActed()) {
+                throw DelegationException::alreadyDelegated();
+            }
+
+            $assignee->update([
+                'status' => AssigneeStatus::Delegated,
+                'delegated_to_type' => $delegateTo->getMorphClass(),
+                'delegated_to_id' => $delegateTo->getKey(),
+                'acted_at' => now(),
+            ]);
+
+            $delegateAssignee = ApprovalStepAssignee::create([
+                'approval_request_step_id' => $step->id,
+                'assignee_type' => $delegateTo->getMorphClass(),
+                'assignee_id' => $delegateTo->getKey(),
+                'assigned_via' => 'delegation',
+                'status' => AssigneeStatus::Pending,
+            ]);
+
+            $this->logAction(
+                request: $request,
+                step: $step,
+                actor: $actor,
+                action: ActionType::Delegated,
+                comment: $comment,
+            );
+
+            RequestDelegated::dispatch($request, $step, $assignee->fresh(), $delegateAssignee);
+
+            return $request->fresh(['steps.assignees', 'actions']);
+        });
     }
 
     protected function shouldStepTerminateOnRejection(ApprovalRequestStep $step): bool

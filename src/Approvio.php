@@ -55,4 +55,9 @@ class Approvio
     {
         return $this->engine->cancel($request, $actor, $comment);
     }
+
+    public function delegate(ApprovalRequest $request, Model $actor, Model $delegateTo, ?string $comment = null): ApprovalRequest
+    {
+        return $this->engine->delegate($request, $actor, $delegateTo, $comment);
+    }
 }

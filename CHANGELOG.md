@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ApprovalEngine::delegate()` — one-level delegation; marks original assignee as `Delegated`, creates a new pending assignee row for the delegate with `assigned_via = 'delegation'`.
+- `HasApprovalActions::delegate()` — actor-shorthand: `$manager->delegate($request, $deputy, 'OOO')`.
+- `Approvio::delegate()` — facade-backed delegation method.
+- `DelegationException` — `notAnAssignee()`, `cannotDelegateFurther()`, `alreadyDelegated()` named constructors.
+- `RequestDelegated` event — fires after a successful delegation with `$from` and `$to` assignee references.
+- `ActionType::Delegated` — recorded in audit log on every delegation.
+- `ApprovalEngine::isStepQuorumMet()` now excludes `Delegated` rows from the `All` quorum denominator so vacated slots do not block completion.
+- Delegation section in `README.md` documenting one-level-only policy and non-revocability.
 - `RelationshipResolver` — resolves approvers by walking a dot-notation Eloquent relation chain; returns empty collection gracefully when any segment is null.
 - `WorkflowBuilder::relation(string $chain)` — fluent shorthand for relationship-based steps.
 - PHPStan ratcheted from level 6 to level 7 — 0 errors across all source files.

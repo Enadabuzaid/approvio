@@ -308,6 +308,26 @@ If `spatie/laravel-permission` is not installed and `.role()` is called, a
 
 ---
 
+## Delegation
+
+An assignee can hand their slot to another user with `delegate()`. Delegation is
+**one level only** — a delegate cannot delegate further.
+
+```php
+// Actor delegates to a deputy with an optional comment.
+$manager->delegate($request, $deputy, 'OOO this week');
+```
+
+After delegating:
+
+- The original assignee's status becomes `Delegated` and they can no longer approve or reject.
+- A new assignee row is created for the deputy with `assigned_via = 'delegation'`.
+- For `All` quorum steps, `Delegated` rows are excluded from the denominator — only the active (non-delegated) slots count.
+
+Delegation is **not revocable**. If a request needs to be restarted after an erroneous delegation, cancel it and resubmit.
+
+---
+
 ## Strategies
 
 Approvio ships two strategies. Pick per model based on risk tolerance.
