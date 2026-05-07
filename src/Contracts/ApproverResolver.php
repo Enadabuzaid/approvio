@@ -26,4 +26,11 @@ interface ApproverResolver
      * @return Collection<int, Model>
      */
     public function resolve(Model $approvable): Collection;
+
+    /**
+     * The value written to approval_step_assignees.assigned_via.
+     * Resolvers that find users through a different mechanism (e.g. role, relation)
+     * should return a descriptive source name.
+     */
+    public function assignedVia(): string;
 }

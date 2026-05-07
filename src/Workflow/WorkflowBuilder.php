@@ -9,6 +9,7 @@ use Enadstack\Approvio\Contracts\ApproverResolver;
 use Enadstack\Approvio\Enums\QuorumRule;
 use Enadstack\Approvio\Enums\StepType;
 use Enadstack\Approvio\Resolvers\Approvers\DirectUserResolver;
+use Enadstack\Approvio\Resolvers\Approvers\RoleResolver;
 
 /**
  * Fluent builder for declaring workflows in PHP. v0.1 only supports
@@ -107,6 +108,15 @@ class PendingStep
         $this->quorumCount = $count;
 
         return $this;
+    }
+
+    /**
+     * Resolve approvers by Spatie Permission role.
+     * Throws MissingDependencyException if spatie/laravel-permission is not installed.
+     */
+    public function role(string $roleName, ?string $guardName = null): self
+    {
+        return $this->approvers(new RoleResolver($roleName, $guardName));
     }
 
     public function when(Closure $condition): self

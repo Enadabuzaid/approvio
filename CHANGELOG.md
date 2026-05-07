@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `RoleResolver` — resolves approvers by Spatie Permission role name; throws `MissingDependencyException` when `spatie/laravel-permission` is not installed.
+- `MissingDependencyException` — descriptive exception for missing optional dependencies with `composer require` hint.
+- `ApproverResolver::assignedVia(): string` — new contract method; `DirectUserResolver` returns `'direct'`, `RoleResolver` returns `'role'`.
+- `WorkflowBuilder::role(string $roleName, ?string $guardName)` — fluent shorthand for role-based steps.
+- Spatie Permission integration section in `README.md`.
 - `WorkflowBuilder::when(Closure)` — marks a step as conditional; the closure is evaluated against the live model at activation time.
 - `ConditionEvaluator` contract (`src/Contracts/ConditionEvaluator.php`) — extension point for class-based conditions.
 - `StepSkipped` event — fires whenever a step is skipped due to a false condition.

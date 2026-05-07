@@ -328,7 +328,7 @@ class ApprovalEngine
                 'approval_request_step_id' => $step->id,
                 'assignee_type' => $approver->getMorphClass(),
                 'assignee_id' => $approver->getKey(),
-                'assigned_via' => 'direct',
+                'assigned_via' => $stepDef->approvers->assignedVia(),
                 'status' => AssigneeStatus::Pending,
             ]);
         }

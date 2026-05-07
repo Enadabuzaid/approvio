@@ -21,6 +21,11 @@ class DirectUserResolver implements ApproverResolver
     {
     }
 
+    public function assignedVia(): string
+    {
+        return 'direct';
+    }
+
     public function resolve(Model $approvable): Collection
     {
         $result = ($this->callback)($approvable);

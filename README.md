@@ -239,6 +239,48 @@ is skipped as a whole if its condition is false.
 
 ---
 
+## Spatie Permission integration
+
+Use `.role()` on a step to resolve all users holding a given Spatie role at
+activation time. The package is an opt-in — it is not a hard dependency.
+
+```bash
+composer require spatie/laravel-permission
+```
+
+```php
+use Enadstack\Approvio\Workflow\Workflow;
+use Enadstack\Approvio\Workflow\WorkflowBuilder;
+
+class ExpenseWorkflow extends Workflow
+{
+    public function define(WorkflowBuilder $flow): void
+    {
+        $flow->step('finance-review')
+            ->role('finance');            // all users with role 'finance'
+
+        $flow->step('cfo-approval')
+            ->role('cfo', 'web');         // role scoped to the 'web' guard
+    }
+}
+```
+
+The `approval_step_assignees.assigned_via` column is set to `'role'` for
+role-resolved assignees so you can distinguish them from directly-assigned
+users in queries and audit views.
+
+Configure which Eloquent model is queried for role resolution:
+
+```php
+// config/approvio.php
+'user_model' => env('APPROVIO_USER_MODEL', App\Models\User::class),
+```
+
+If `spatie/laravel-permission` is not installed and `.role()` is called, a
+`MissingDependencyException` is thrown with the exact `composer require` command.
+
+---
+
 ## Strategies
 
 Approvio ships two strategies. Pick per model based on risk tolerance.
