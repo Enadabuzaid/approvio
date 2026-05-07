@@ -15,6 +15,7 @@ use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelConditionalWorkfl
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelNofMWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseRelationshipWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseRoleWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseSingleStepWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseTwoStepWorkflow;
 use Illuminate\Database\Eloquent\Model;
@@ -46,6 +47,7 @@ class TestExpense extends Model
         'all-conditional' => ExpenseAllConditionalWorkflow::class,
         'parallel-conditional' => ExpenseParallelConditionalWorkflow::class,
         'relationship' => ExpenseRelationshipWorkflow::class,
+        'role' => ExpenseRoleWorkflow::class,
         'escalation' => ExpenseEscalationWorkflow::class,
         'deadline-no-escalation' => ExpenseDeadlineNoEscalationWorkflow::class,
     ];

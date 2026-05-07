@@ -7,7 +7,103 @@ on:
     branches: [main]
 
 jobs:
+  # -----------------------------------------------------------------------
+  # Primary matrix: PHP × Laravel × DB (18 cells)
+  # -----------------------------------------------------------------------
   test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        laravel: ['11.*', '12.*']
+        db: ['sqlite', 'mysql', 'pgsql']
+        include:
+          - laravel: '11.*'
+            testbench: '9.*'
+          - laravel: '12.*'
+            testbench: '10.*'
+
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / ${{ matrix.db }}
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: approvio_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      pgsql:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: approvio_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, sqlite3, pdo_mysql, pdo_pgsql
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction
+
+      - name: Run tests (SQLite)
+        if: matrix.db == 'sqlite'
+        run: vendor/bin/pest
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+
+      - name: Run tests (MySQL)
+        if: matrix.db == 'mysql'
+        run: vendor/bin/pest
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: approvio_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+
+      - name: Run tests (PostgreSQL)
+        if: matrix.db == 'pgsql'
+        run: vendor/bin/pest
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: approvio_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+
+  # -----------------------------------------------------------------------
+  # Spatie integration: PHP × Laravel (6 cells, Spatie always installed)
+  # Verifies RoleResolverIntegrationTest with spatie/laravel-permission.
+  # -----------------------------------------------------------------------
+  spatie-integration:
     runs-on: ubuntu-latest
 
     strategy:
@@ -21,7 +117,7 @@ jobs:
           - laravel: '12.*'
             testbench: '10.*'
 
-    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+    name: Spatie / PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
 
     steps:
       - name: Checkout
@@ -34,9 +130,9 @@ jobs:
           extensions: pdo_sqlite, sqlite3
           coverage: none
 
-      - name: Install dependencies
+      - name: Install dependencies with Spatie
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "spatie/laravel-permission:^6.0" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
       - name: Run tests

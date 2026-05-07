@@ -119,7 +119,7 @@ class ApprovalEngine
 
             ApprovalRequested::dispatch($request);
 
-            return $request->fresh(['steps.assignees', 'actions']);
+            return $request->refresh()->load(['steps.assignees', 'actions']);
         });
     }
 
@@ -168,7 +168,7 @@ class ApprovalEngine
                 $next = $request;
             }
 
-            return $next->fresh(['steps.assignees', 'actions']);
+            return $next->refresh()->load(['steps.assignees', 'actions']);
         });
     }
 
@@ -223,7 +223,7 @@ class ApprovalEngine
                 ApprovalRejected::dispatch($request);
             }
 
-            return $request->fresh(['steps.assignees', 'actions']);
+            return $request->refresh()->load(['steps.assignees', 'actions']);
         });
     }
 
@@ -262,7 +262,7 @@ class ApprovalEngine
 
             ApprovalCancelled::dispatch($request);
 
-            return $request->fresh(['steps.assignees', 'actions']);
+            return $request->refresh()->load(['steps.assignees', 'actions']);
         });
     }
 
@@ -297,6 +297,11 @@ class ApprovalEngine
 
         return DB::transaction(function () use ($original, $requester, $context, $changes) {
             $approvable = $original->approvable;
+
+            if (! $approvable instanceof Model) {
+                throw new \RuntimeException('Original request has no resolvable approvable model.');
+            }
+
             $strategy = $this->resolveStrategy($original);
             $effectiveChanges = $changes ?? $original->pending_changes ?? [];
             $mergedContext = array_merge($original->context ?? [], $context);
@@ -322,7 +327,7 @@ class ApprovalEngine
 
             RequestResubmitted::dispatch($new, $original);
 
-            return $new->fresh(['steps.assignees', 'actions']);
+            return $new->refresh()->load(['steps.assignees', 'actions']);
         });
     }
 
@@ -368,7 +373,13 @@ class ApprovalEngine
             return;
         }
 
-        $definition = $this->resolveWorkflow($request->approvable, $request->workflow_slug);
+        $approvable = $request->approvable;
+
+        if (! $approvable instanceof Model) {
+            return;
+        }
+
+        $definition = $this->resolveWorkflow($approvable, $request->workflow_slug);
         $stepDef = $definition->stepAt($step->step_index);
 
         if (! $stepDef) {
@@ -377,7 +388,6 @@ class ApprovalEngine
 
         // Evaluate condition against the live model; skip if it returns false.
         if ($stepDef->condition !== null) {
-            $approvable = $request->approvable;
             if (! ($stepDef->condition)($approvable, $request)) {
                 $this->skipStep($request, $step);
 
@@ -386,7 +396,7 @@ class ApprovalEngine
         }
 
         // Resolve approvers freshly against the live model.
-        $approvers = $stepDef->approvers->resolve($request->approvable);
+        $approvers = $stepDef->approvers->resolve($approvable);
 
         foreach ($approvers as $approver) {
             ApprovalStepAssignee::create([
@@ -441,13 +451,13 @@ class ApprovalEngine
         $nextIndex = $step->step_index + 1;
 
         if ($nextIndex >= $totalSteps) {
-            $this->finalizeAsApproved($request->fresh());
+            $this->finalizeAsApproved($request->refresh());
 
             return;
         }
 
         $request->update(['current_step_index' => $nextIndex]);
-        $this->activateNextStep($request->fresh());
+        $this->activateNextStep($request->refresh());
     }
 
     protected function advanceOrComplete(ApprovalRequest $request): ApprovalRequest
@@ -463,9 +473,9 @@ class ApprovalEngine
 
         // Move to the next step.
         $request->update(['current_step_index' => $nextIndex]);
-        $this->activateNextStep($request->fresh());
+        $this->activateNextStep($request->refresh());
 
-        return $request->fresh();
+        return $request;
     }
 
     protected function finalizeAsApproved(ApprovalRequest $request): void
@@ -622,9 +632,10 @@ class ApprovalEngine
                 comment: $comment,
             );
 
-            RequestDelegated::dispatch($request, $step, $assignee->fresh(), $delegateAssignee);
+            $assignee->refresh();
+            RequestDelegated::dispatch($request, $step, $assignee, $delegateAssignee);
 
-            return $request->fresh(['steps.assignees', 'actions']);
+            return $request->refresh()->load(['steps.assignees', 'actions']);
         });
     }
 
@@ -639,6 +650,11 @@ class ApprovalEngine
             }
 
             $approvable = $request->approvable;
+
+            if (! $approvable instanceof Model) {
+                return;
+            }
+
             $definition = $this->resolveWorkflow($approvable, $request->workflow_slug);
             $stepDef = $definition->stepAt($step->step_index);
 

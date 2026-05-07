@@ -487,6 +487,36 @@ Everything in `config/approvio.php` is documented inline. The key knobs:
 'audit.capture_ip' => true,
 ```
 
+## Upgrading from v0.1 to v0.2
+
+### Breaking change — custom `ApproverResolver` implementations
+
+If you implemented `ApproverResolver` directly in your application before v0.2, you must add one new method:
+
+```php
+public function assignedVia(): string
+{
+    return 'my-custom-resolver'; // any string label
+}
+```
+
+Applications that only **use** the built-in resolvers (`DirectUserResolver`, `RoleResolver`,
+`RelationshipResolver`) require no changes.
+
+### Everything else is opt-in
+
+All v0.2 features are additive. Existing v0.1 code compiles and runs without modification:
+
+- **Parallel steps** — add `.parallel()` to new steps only. Existing sequential steps are unaffected.
+- **Quorum rules** — default quorum is `any` on parallel steps, unchanged for sequential.
+- **Conditional steps** — add `.when(fn($model) => bool)` to new steps only.
+- **Role-based approvers** — opt-in via `.role('role-name')`. Requires `spatie/laravel-permission`.
+- **Relationship-based approvers** — opt-in via `.relation('user.manager')`.
+- **Delegation** — `HasApprovalActions::delegate()` is new; no existing method changed.
+- **Escalation/deadlines** — opt-in via `.deadline(hours: N)` and `.escalateTo(...)`.
+- **Resubmit** — `Approvable::resubmit()` is new; no existing method changed.
+- **New migration** — `parent_request_id` nullable FK on `approval_requests`. Run `php artisan migrate` after upgrading.
+
 ## Roadmap
 
 - **0.2** — Parallel steps, quorum rules (any/all/N-of-M), conditional steps

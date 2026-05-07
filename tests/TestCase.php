@@ -25,9 +25,20 @@ abstract class TestCase extends Orchestra
      * The service provider registers the migration paths via loadMigrationsFrom();
      * calling artisan migrate here ensures Testbench actually executes them.
      * Using artisan directly (not loadMigrationsFrom again) prevents double-run.
+     *
+     * When spatie/laravel-permission is installed we also load its migrations so
+     * the role/permission tables exist for RoleResolverIntegrationTest.
      */
     protected function defineDatabaseMigrations(): void
     {
+        if (class_exists(\Spatie\Permission\PermissionServiceProvider::class)) {
+            $reflector = new \ReflectionClass(\Spatie\Permission\PermissionServiceProvider::class);
+            $migrationsPath = dirname(dirname($reflector->getFileName())) . '/database/migrations';
+            if (is_dir($migrationsPath)) {
+                $this->loadMigrationsFrom($migrationsPath);
+            }
+        }
+
         $this->artisan('migrate')->run();
 
         $this->beforeApplicationDestroyed(function () {
@@ -37,23 +48,61 @@ abstract class TestCase extends Orchestra
 
     protected function getPackageProviders($app): array
     {
-        return [
-            ApprovioServiceProvider::class,
-        ];
+        $providers = [ApprovioServiceProvider::class];
+
+        if (class_exists(\Spatie\Permission\PermissionServiceProvider::class)) {
+            $providers[] = \Spatie\Permission\PermissionServiceProvider::class;
+        }
+
+        return $providers;
     }
 
     protected function defineEnvironment($app): void
     {
         /** @var Application $app */
+        $driver = env('DB_CONNECTION', 'sqlite');
+
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-            'foreign_key_constraints' => true,
-        ]);
+
+        if ($driver === 'mysql') {
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'mysql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '3306'),
+                'database' => env('DB_DATABASE', 'approvio_test'),
+                'username' => env('DB_USERNAME', 'root'),
+                'password' => env('DB_PASSWORD', 'password'),
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+            ]);
+        } elseif ($driver === 'pgsql') {
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'pgsql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '5432'),
+                'database' => env('DB_DATABASE', 'approvio_test'),
+                'username' => env('DB_USERNAME', 'postgres'),
+                'password' => env('DB_PASSWORD', 'password'),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'schema' => 'public',
+            ]);
+        } else {
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+                'prefix' => '',
+                'foreign_key_constraints' => true,
+            ]);
+        }
 
         $app['config']->set('approvio.user_model', TestUser::class);
+
+        if (class_exists(\Spatie\Permission\PermissionServiceProvider::class)) {
+            require_once __DIR__ . '/Fixtures/Models/SpatieTestUser.php';
+            $app['config']->set('approvio.user_model', \Enadstack\Approvio\Tests\Fixtures\Models\SpatieTestUser::class);
+        }
     }
 
     /**

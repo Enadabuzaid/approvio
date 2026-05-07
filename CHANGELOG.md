@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-07
+
+### Breaking changes
+
+- **`ApproverResolver` contract gains `assignedVia(): string`.** Any application that implemented `ApproverResolver` directly before v0.2 must add this method returning a source label (e.g. `'custom'`). Built-in resolvers (`DirectUserResolver`, `RoleResolver`, `RelationshipResolver`) implement it transparently and are unaffected. v0.1 code that only **uses** the built-in resolvers requires no changes.
+
 ### Added
 
 - `ApprovalEngine::resubmit()` — creates a new request from a rejected one; guards against non-rejected or already-active-child states; forwards context and `pending_changes`; links via `parent_request_id`; logs `ActionType::Resubmitted` on the original; dispatches `RequestResubmitted`.
@@ -61,6 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ApprovalEngine::isStepQuorumMet()` — evaluates whether the configured quorum threshold is satisfied after each approval.
 - `ApprovalEngine::shouldStepTerminateOnRejection()` — policy hook (always `true` in v0.2; configurable threshold planned for v0.3).
 - Parallel steps section in `README.md` documenting quorum rules and rejection policy.
+
+- PHPStan ratcheted from level 7 to level 8 — 0 errors, 0 suppressions. All `fresh()` call-sites replaced with `refresh()->load()` / `refresh()` to produce non-nullable return types; `approvable` null-guards added in `activateNextStep()`, `escalateStep()`, and `resubmit()`.
+- CI matrix expanded to PHP 8.2/8.3/8.4 × Laravel 11/12 × SQLite/MySQL/PostgreSQL (18 cells).
+- Second CI job (`spatie-integration`) installs `spatie/laravel-permission` and runs the full suite with `RoleResolverIntegrationTest` un-skipped.
+- `SpatieTestUser` test fixture (extends `TestUser`, adds `HasRoles`); loaded conditionally via `require_once` only when Spatie is installed.
+- `ExpenseRoleWorkflow` test fixture — uses `->role('manager')` to drive `RoleResolverIntegrationTest`.
+- `TestCase` conditionally registers `Spatie\Permission\PermissionServiceProvider` and its migrations when Spatie is installed.
+- `RoleResolverIntegrationTest` fixed: wrong workflow slug corrected (`'submission'` → `'role'`), uses `SpatieTestUser` for role assignment.
 
 ### Changed
 

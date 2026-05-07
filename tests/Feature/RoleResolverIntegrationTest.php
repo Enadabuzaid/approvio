@@ -17,11 +17,18 @@ $spatieInstalled = class_exists(\Spatie\Permission\PermissionServiceProvider::cl
  * To run these tests locally:
  *   composer require spatie/laravel-permission --dev
  *   vendor/bin/pest tests/Feature/RoleResolverIntegrationTest.php
+ *
+ * The 'role' workflow on TestExpense uses RoleResolver('manager'), which
+ * queries the configured user model (SpatieTestUser when Spatie is present)
+ * for users assigned the 'manager' role.
  */
 it('resolves users by role and writes assigned_via = "role" on assignee rows', function () {
-    // Seed a role and assign it to a user via Spatie.
-    $manager = TestUser::create(['name' => 'Bob', 'email' => 'manager-bob@example.com']);
-    $manager->assignRole('manager'); // @phpstan-ignore-line
+    /** @var \Enadstack\Approvio\Tests\Fixtures\Models\SpatieTestUser $manager */
+    $manager = \Enadstack\Approvio\Tests\Fixtures\Models\SpatieTestUser::create([
+        'name' => 'Bob',
+        'email' => 'manager-bob@example.com',
+    ]);
+    $manager->assignRole('manager');
 
     $submitter = TestUser::create(['name' => 'Alice', 'email' => 'alice@example.com']);
     $expense = TestExpense::create([
@@ -30,7 +37,7 @@ it('resolves users by role and writes assigned_via = "role" on assignee rows', f
         'amount' => 500,
     ]);
 
-    $request = $expense->requestApproval('submission', $submitter);
+    $request = $expense->requestApproval('role', $submitter);
 
     $assignee = $request->steps->first()->assignees->first();
     expect($assignee->assignee_id)->toBe($manager->id)
@@ -39,8 +46,12 @@ it('resolves users by role and writes assigned_via = "role" on assignee rows', f
 })->skip(! $spatieInstalled, 'spatie/laravel-permission not installed');
 
 it('completes the request when the role-assigned approver approves', function () {
-    $manager = TestUser::create(['name' => 'Bob', 'email' => 'manager-bob@example.com']);
-    $manager->assignRole('manager'); // @phpstan-ignore-line
+    /** @var \Enadstack\Approvio\Tests\Fixtures\Models\SpatieTestUser $manager */
+    $manager = \Enadstack\Approvio\Tests\Fixtures\Models\SpatieTestUser::create([
+        'name' => 'Bob',
+        'email' => 'manager-bob@example.com',
+    ]);
+    $manager->assignRole('manager');
 
     $submitter = TestUser::create(['name' => 'Alice', 'email' => 'alice@example.com']);
     $expense = TestExpense::create([
@@ -49,7 +60,7 @@ it('completes the request when the role-assigned approver approves', function ()
         'amount' => 500,
     ]);
 
-    $request = $expense->requestApproval('submission', $submitter);
+    $request = $expense->requestApproval('role', $submitter);
     $request = $manager->approve($request);
 
     expect($request->status)->toBe(RequestStatus::Approved);
