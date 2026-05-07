@@ -60,4 +60,17 @@ class Approvio
     {
         return $this->engine->delegate($request, $actor, $delegateTo, $comment);
     }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>|null  $changes
+     */
+    public function resubmit(
+        ApprovalRequest $original,
+        ?Model $requester = null,
+        array $context = [],
+        ?array $changes = null,
+    ): ApprovalRequest {
+        return $this->engine->resubmit($original, $requester, $context, $changes);
+    }
 }

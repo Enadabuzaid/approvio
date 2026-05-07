@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static ApprovalRequest reject(ApprovalRequest $request, Model $actor, ?string $comment = null)
  * @method static ApprovalRequest cancel(ApprovalRequest $request, ?Model $actor = null, ?string $comment = null)
  * @method static ApprovalRequest delegate(ApprovalRequest $request, Model $actor, Model $delegateTo, ?string $comment = null)
+ * @method static ApprovalRequest resubmit(ApprovalRequest $original, ?Model $requester = null, array<string, mixed> $context = [], ?array<string, mixed> $changes = null)
  */
 class Approvio extends Facade
 {

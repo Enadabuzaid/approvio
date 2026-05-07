@@ -18,6 +18,7 @@ use Enadstack\Approvio\Events\ApprovalExpired;
 use Enadstack\Approvio\Events\ApprovalRejected;
 use Enadstack\Approvio\Events\ApprovalRequested;
 use Enadstack\Approvio\Events\RequestDelegated;
+use Enadstack\Approvio\Events\RequestResubmitted;
 use Enadstack\Approvio\Events\StepActivated;
 use Enadstack\Approvio\Events\StepApproved;
 use Enadstack\Approvio\Events\StepEscalated;
@@ -262,6 +263,66 @@ class ApprovalEngine
             ApprovalCancelled::dispatch($request);
 
             return $request->fresh(['steps.assignees', 'actions']);
+        });
+    }
+
+    /* -----------------------------------------------------------------
+     |  Resubmit
+     | ----------------------------------------------------------------- */
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>|null  $changes  null = carry forward parent pending_changes
+     */
+    public function resubmit(
+        ApprovalRequest $original,
+        ?Model $requester = null,
+        array $context = [],
+        ?array $changes = null,
+    ): ApprovalRequest {
+        if ($original->status !== RequestStatus::Rejected) {
+            throw InvalidStateTransitionException::between($original->status, RequestStatus::Rejected);
+        }
+
+        $terminalValues = [
+            RequestStatus::Approved->value,
+            RequestStatus::Rejected->value,
+            RequestStatus::Cancelled->value,
+            RequestStatus::Expired->value,
+        ];
+
+        if ($original->children()->whereNotIn('status', $terminalValues)->exists()) {
+            throw new InvalidStateTransitionException('This request already has an active resubmission.');
+        }
+
+        return DB::transaction(function () use ($original, $requester, $context, $changes) {
+            $approvable = $original->approvable;
+            $strategy = $this->resolveStrategy($original);
+            $effectiveChanges = $changes ?? $original->pending_changes ?? [];
+            $mergedContext = array_merge($original->context ?? [], $context);
+
+            $new = $this->submit(
+                approvable: $approvable,
+                workflowSlug: $original->workflow_slug,
+                strategy: $strategy,
+                requester: $requester,
+                context: $mergedContext,
+                changes: $effectiveChanges,
+            );
+
+            $new->update(['parent_request_id' => $original->id]);
+
+            $this->logAction(
+                request: $original,
+                step: null,
+                actor: $requester,
+                action: ActionType::Resubmitted,
+                comment: null,
+            );
+
+            RequestResubmitted::dispatch($new, $original);
+
+            return $new->fresh(['steps.assignees', 'actions']);
         });
     }
 

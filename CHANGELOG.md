@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ApprovalEngine::resubmit()` — creates a new request from a rejected one; guards against non-rejected or already-active-child states; forwards context and `pending_changes`; links via `parent_request_id`; logs `ActionType::Resubmitted` on the original; dispatches `RequestResubmitted`.
+- `Approvable::resubmit(?Model, array, ?array)` — convenience method targeting the most recent rejected request for the approvable; `$changes = null` carries forward `pending_changes` from the parent.
+- `Approvio::resubmit()` — facade-backed resubmit method.
+- `RequestResubmitted` event — fires with `$newRequest` and `$originalRequest` after a successful resubmit.
+- `ActionType::Resubmitted` — recorded on the original request's audit log.
+- `approval_requests.parent_request_id` — self-referential nullable FK added via migration `2024_01_01_000006_add_parent_request_id_to_approval_requests.php`; `nullOnDelete`.
+- `ApprovalRequest::parent()` / `children()` — Eloquent relations for the parent–child chain.
+- Resubmit section in `README.md`.
 - `EscalateApprovalsCommand` (`approvio:escalate`) — scans overdue active steps and expired requests; escalates or expires each one.
 - `ApprovalEngine::escalateStep()` — re-resolves the workflow, marks Pending assignees `Escalated`, adds escalation target(s) as new Pending assignees, logs `ActionType::Escalated`, dispatches `StepEscalated`.
 - `ApprovalEngine::expire()` — transitions a request to `RequestStatus::Expired`, logs, dispatches `ApprovalExpired`.

@@ -361,6 +361,39 @@ Trying to `approve()` or `reject()` an expired request throws `InvalidStateTrans
 
 ---
 
+## Resubmit
+
+When a request is rejected, the submitter can open a new request tied to the original
+via `resubmit()`. The new request goes through the full workflow again and the original
+is linked via `parent_request_id`.
+
+```php
+// On the approvable model — targets the most recent rejected request
+$newRequest = $expense->resubmit($submitter);
+
+// Carry forward the rejection comment / make corrections
+$newRequest = $expense->resubmit($submitter, context: ['note' => 'Reduced cost']);
+
+// DraftApproval: override the proposed changes on resubmit
+$newRequest = $doc->resubmit(changes: ['title' => 'Corrected title', 'body' => 'Fixed body']);
+
+// Or target a specific rejected request directly
+$newRequest = Approvio::resubmit($rejectedRequest, $submitter);
+```
+
+Rules:
+
+- Only `Rejected` requests can be resubmitted.
+- If the original already has an active child request, a second resubmit throws
+  `InvalidStateTransitionException`.
+- The `parent_request_id` on the new request points to the original.
+- `DraftApproval` workflows: `pending_changes` from the parent are carried forward
+  automatically unless you pass explicit `$changes`.
+- A `Resubmitted` audit action is appended to the **original** request's log.
+- `RequestResubmitted` event fires with both request instances.
+
+---
+
 ## Strategies
 
 Approvio ships two strategies. Pick per model based on risk tolerance.
@@ -433,6 +466,11 @@ makes the package safe for compliance contexts.
 | `ApprovalCompleted`   | All steps approved — request is fully approved.  |
 | `ApprovalRejected`    | The request is rejected at any step.             |
 | `ApprovalCancelled`   | The request is cancelled.                        |
+| `RequestDelegated`    | An assignee delegates to another user.           |
+| `StepEscalated`       | An overdue step escalates to a new assignee.     |
+| `ApprovalExpired`     | A request expires due to a missed deadline.      |
+| `StepSkipped`         | A conditional step is skipped.                   |
+| `RequestResubmitted`  | A rejected request is resubmitted.               |
 
 Listen to these in your `EventServiceProvider` to send notifications, sync to
 external systems, fire webhooks, etc.
@@ -453,7 +491,7 @@ Everything in `config/approvio.php` is documented inline. The key knobs:
 
 - **0.2** — Parallel steps, quorum rules (any/all/N-of-M), conditional steps
   (`when()`), Spatie Permission integration, relationship-based approvers,
-  delegation, escalation, deadlines.
+  delegation, escalation, deadlines, resubmit.
 - **0.3** — DB-defined workflows, Stancl & Spatie Multitenancy adapters,
   per-tenant workflow overrides.
 - **0.4** — `approvio-filament` companion package, `approvio-inertia-vue`

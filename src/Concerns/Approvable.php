@@ -6,6 +6,7 @@ namespace Enadstack\Approvio\Concerns;
 
 use Enadstack\Approvio\Contracts\ApprovalStrategy;
 use Enadstack\Approvio\Engine\ApprovalEngine;
+use Enadstack\Approvio\Enums\RequestStatus;
 use Enadstack\Approvio\Models\ApprovalRequest;
 use Enadstack\Approvio\Strategies\SoftApproval;
 use Illuminate\Database\Eloquent\Model;
@@ -94,6 +95,32 @@ trait Approvable
     public function latestApprovalRequest(): ?ApprovalRequest
     {
         return $this->approvalRequests()->latest()->first();
+    }
+
+    /**
+     * Resubmit the most recently rejected request for this approvable.
+     *
+     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>|null  $changes  null carries forward parent pending_changes
+     */
+    public function resubmit(
+        ?Model $requester = null,
+        array $context = [],
+        ?array $changes = null,
+    ): ApprovalRequest {
+        $latest = $this->approvalRequests()
+            ->where('status', RequestStatus::Rejected->value)
+            ->orderByDesc('id')
+            ->firstOrFail();
+
+        $requester ??= auth()->user();
+
+        return app(ApprovalEngine::class)->resubmit(
+            original: $latest,
+            requester: $requester instanceof Model ? $requester : null,
+            context: $context,
+            changes: $changes,
+        );
     }
 
     /**

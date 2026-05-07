@@ -6,11 +6,13 @@ namespace Enadstack\Approvio\Models;
 
 use Enadstack\Approvio\Enums\RequestStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
+ * @property int|null $parent_request_id
  * @property string $workflow_slug
  * @property int $workflow_version
  * @property string $approvable_type
@@ -72,6 +74,18 @@ class ApprovalRequest extends Model
     public function actions(): HasMany
     {
         return $this->hasMany(ApprovalAction::class)->orderBy('created_at');
+    }
+
+    /** @return BelongsTo<self, $this> */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_request_id');
+    }
+
+    /** @return HasMany<self, $this> */
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_request_id');
     }
 
     public function currentStep(): ?ApprovalRequestStep

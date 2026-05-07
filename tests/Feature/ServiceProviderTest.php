@@ -21,4 +21,6 @@ it('runs all migrations cleanly', function () {
     foreach ($tables as $t) {
         expect(Schema::hasTable($t))->toBeTrue("Table [{$t}] should exist after migrations run.");
     }
+
+    expect(Schema::hasColumn('approval_requests', 'parent_request_id'))->toBeTrue();
 });
