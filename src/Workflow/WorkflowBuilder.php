@@ -110,6 +110,13 @@ class PendingStep
     public function quorum(string $rule, ?int $count = null): self
     {
         $this->quorumRule = QuorumRule::from($rule);
+
+        if ($this->quorumRule === QuorumRule::NofM && ($count === null || $count < 1)) {
+            throw new \InvalidArgumentException(
+                'n_of_m quorum requires a count of at least 1; received ' . var_export($count, true) . '.'
+            );
+        }
+
         $this->quorumCount = $count;
 
         return $this;

@@ -25,9 +25,10 @@ use Enadstack\Approvio\Events\StepEscalated;
 use Enadstack\Approvio\Events\StepRejected;
 use Enadstack\Approvio\Events\StepSkipped;
 use Enadstack\Approvio\Exceptions\DelegationException;
-use Enadstack\Approvio\Exceptions\UnauthorizedActionException;
 use Enadstack\Approvio\Exceptions\InvalidStateTransitionException;
+use Enadstack\Approvio\Exceptions\UnauthorizedActionException;
 use Enadstack\Approvio\Exceptions\WorkflowNotFoundException;
+use Enadstack\Approvio\Exceptions\WorkflowStepNotFoundException;
 use Enadstack\Approvio\Models\ApprovalAction;
 use Enadstack\Approvio\Models\ApprovalRequest;
 use Enadstack\Approvio\Models\ApprovalRequestStep;
@@ -383,7 +384,7 @@ class ApprovalEngine
         $stepDef = $definition->stepAt($step->step_index);
 
         if (! $stepDef) {
-            return;
+            throw WorkflowStepNotFoundException::for($request->workflow_slug, $step->step_index);
         }
 
         // Evaluate condition against the live model; skip if it returns false.

@@ -17,6 +17,7 @@ use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseParallelWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseRelationshipWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseRoleWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseSingleStepWorkflow;
+use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseTruncatingWorkflow;
 use Enadstack\Approvio\Tests\Fixtures\Workflows\ExpenseTwoStepWorkflow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,6 +51,7 @@ class TestExpense extends Model
         'role' => ExpenseRoleWorkflow::class,
         'escalation' => ExpenseEscalationWorkflow::class,
         'deadline-no-escalation' => ExpenseDeadlineNoEscalationWorkflow::class,
+        'truncating' => ExpenseTruncatingWorkflow::class,
     ];
 
     public function user(): BelongsTo

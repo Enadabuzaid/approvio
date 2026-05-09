@@ -58,6 +58,26 @@ it('quorum() sets rule and count on the step', function () {
         ->and($step->quorumCount)->toBe(2);
 });
 
+it('throws when n_of_m quorum is declared without a count', function () {
+    $builder = new WorkflowBuilder('test', 1, 'App\\TestModel');
+    $builder->step('committee')
+        ->approvers(fn () => TestUser::all())
+        ->parallel()
+        ->quorum('n_of_m');
+
+    $builder->build();
+})->throws(\InvalidArgumentException::class, 'n_of_m');
+
+it('throws when n_of_m quorum count is less than 1', function () {
+    $builder = new WorkflowBuilder('test', 1, 'App\\TestModel');
+    $builder->step('committee')
+        ->approvers(fn () => TestUser::all())
+        ->parallel()
+        ->quorum('n_of_m', 0);
+
+    $builder->build();
+})->throws(\InvalidArgumentException::class, 'n_of_m');
+
 it('sequential steps default to Any quorum and Sequential type', function () {
     $workflow = new ExpenseTwoStepWorkflow();
     $definition = $workflow->toDefinition();

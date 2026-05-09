@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-09
+
+### Fixed
+
+- **Issue #7 — Silent stall when workflow class removes a step.** `ApprovalEngine::activateNextStep()` previously returned silently when `stepAt()` returned null (DB has a step row the PHP class no longer defines). It now throws `WorkflowStepNotFoundException` with the workflow slug, step index, and a resolution hint. Regression test added (`WorkflowClassMutationTest`).
+- **Issue #8 — Silent n_of_m quorum always met when count is missing.** `WorkflowBuilder::PendingStep::quorum()` previously stored a null count without validation; the engine cast it to `0`, meaning the quorum was immediately satisfied. It now throws `\InvalidArgumentException` at build time when the rule is `n_of_m` and the count is null or less than 1. Regression tests added (`WorkflowBuilderTest`).
+
+### Added
+
+- `WorkflowStepNotFoundException` — thrown when the engine cannot find a step definition for an index that exists in the database.
+
 ## [0.2.0] - 2026-05-07
 
 ### Breaking changes
